@@ -275,9 +275,10 @@ void DMA1_Stream1_IRQHandler(void)
 
 void USART1_IRQHandler(void)
 {
+	UART1_IdleCallback();   // .c++文件函数调用接口
+	
     HAL_UART_IRQHandler(&huart1);
 
-    UART1_IdleCallback();   // 调C接口
 }
 
 

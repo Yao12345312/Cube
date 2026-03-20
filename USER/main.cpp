@@ -45,6 +45,7 @@ extern void MX_I2C2_Init(void);
 extern void MX_SPI1_Init(void);
 extern void MX_USART1_UART_Init(void);
 extern void MX_USART3_UART_Init(void);
+extern void MX_DMA_Init(void);
 extern void MX_TIM2_Init(void);
 extern void MX_SPI2_Init(void);
 extern void MX_FDCAN1_Init(void);
@@ -80,9 +81,9 @@ MahonyAHRS ahrs(250.0f, 2.0f, 0.001f);
 
 void SystemClock_Config(void);
 void StartDefaultTask(void* argument);
-
+//任务对象句柄
 osThreadId_t defaultTaskHandle;
-
+//线程描述结构体
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 3072,
@@ -103,6 +104,7 @@ int main(void)
   MX_SPI2_Init();
   MX_USART1_UART_Init();
   MX_USART3_UART_Init();
+  MX_DMA_Init();
   MX_TIM2_Init();
   MX_FDCAN1_Init();
 
@@ -216,12 +218,13 @@ void StartDefaultTask(void * argument)
 	
 	float ax, ay, az;
     float gx, gy, gz;
-  
+	//等待蓝牙模块稳定
+	osDelay(3000);
 	if(!g_bt->autoBaudScan())
 	{
 	Error_Handler();
 	}
-	
+
     if(imu.init()!=BMI08_OK)
 	{
 	Error_Handler();

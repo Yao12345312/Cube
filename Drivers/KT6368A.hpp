@@ -18,15 +18,10 @@ public:
                     uint16_t resp_len,
                     uint32_t timeout_ms);
 
-    bool sendData(uint8_t* data, uint16_t size);
-
     bool autoBaudScan();
 
     uint16_t readLine(char* buf, uint16_t buf_len, uint32_t timeout_ms);
-
-    /* UART中断回调入口 */
-    void onRxByteIRQ();
-
+		
 private:
     Uart1Driver* m_uart;
 

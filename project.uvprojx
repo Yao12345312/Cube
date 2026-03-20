@@ -414,14 +414,14 @@
           <GroupName>Dirvers</GroupName>
           <Files>
             <File>
-              <FileName>bmi08g.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\bmi08g.c</FilePath>
-            </File>
-            <File>
               <FileName>BMI088.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\Drivers\BMI088.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>bmi08g.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\bmi08g.c</FilePath>
             </File>
             <File>
               <FileName>bmi08a.c</FileName>

@@ -1,6 +1,8 @@
 #include "uart1Driver.hpp"
 #include <string.h>
 
+extern "C" void Error_Handler(void);
+	
 Uart1Driver* g_uart1Driver = nullptr;
 
 /* ================= 构造 ================= */
@@ -20,7 +22,8 @@ Uart1Driver::Uart1Driver(UART_HandleTypeDef* huart)
 bool Uart1Driver::init()
 {
     /* 创建队列 */
-    m_atQueue = osMessageQueueNew(256, sizeof(uint8_t), NULL);
+	m_mavQueue = osMessageQueueNew(16, sizeof(MavRxFrame_t), NULL);
+    m_atQueue = osMessageQueueNew(16, sizeof(uint8_t), NULL);
     m_mutex = osMutexNew(NULL);
 
     if (!m_atQueue || !m_mavQueue) return false;
@@ -45,11 +48,23 @@ bool Uart1Driver::init()
 /* ================= 启动DMA ================= */
 
 void Uart1Driver::startDMA()
-{
-    HAL_UART_Receive_DMA(m_huart, m_dmaBuf, UART1_DMA_RX_BUF_SIZE);
+{	
+	memset(m_dmaBuf, 0, UART1_DMA_RX_BUF_SIZE);
+	m_lastPos = 0;
+	
+	if(HAL_UART_Receive_DMA(m_huart, m_dmaBuf, UART1_DMA_RX_BUF_SIZE) != HAL_OK)
+    {
+	Error_Handler();
+	}
 
-    /* 开启DMA循环模式 */
-    __HAL_DMA_DISABLE_IT(m_huart->hdmarx, DMA_IT_HT);
+    /* 注意不能禁用DMA传输中断，否则DMA收不到数据 */
+    //__HAL_DMA_DISABLE_IT(m_huart->hdmarx, DMA_IT_HT);
+}
+/* ================= 清空DMA状态 ================= */
+void Uart1Driver::resetRx()
+{
+    m_lastPos = 0;
+    memset(m_dmaBuf, 0, UART1_DMA_RX_BUF_SIZE);
 }
 
 /* ================= 发送 ================= */
@@ -59,7 +74,14 @@ void Uart1Driver::send(const uint8_t* data, uint16_t len)
     if (!data || len == 0) return;
 
     osMutexAcquire(m_mutex, osWaitForever);
-    HAL_UART_Transmit(m_huart, (uint8_t*)data, len, 1000);
+	
+    if(HAL_UART_Transmit_DMA(m_huart, (uint8_t*)data, len )!=HAL_OK)
+	{
+	Error_Handler();
+	}
+	
+	while (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_TC) == RESET);
+	
     osMutexRelease(m_mutex);
 }
 
@@ -73,11 +95,11 @@ void Uart1Driver::setAtMode(bool enable)
 /* ================= IDLE中断核心 ================= */
 
 void Uart1Driver::irqHandler()
-{
+{	//判断串口进入空闲中断
     if (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_IDLE))
-    {
+    {	//清空中断标志位
         __HAL_UART_CLEAR_IDLEFLAG(m_huart);
-
+		
         uint16_t dmaRemain = __HAL_DMA_GET_COUNTER(m_huart->hdmarx);
         uint16_t newPos = UART1_DMA_RX_BUF_SIZE - dmaRemain;
         uint16_t start = m_lastPos;
@@ -108,7 +130,7 @@ void Uart1Driver::irqHandler()
                     osMessageQueuePut(m_atQueue, &ch, 0, 0);
                 }
             }
-
+			//更新lastpose
             m_lastPos = newPos;
             return;
         }

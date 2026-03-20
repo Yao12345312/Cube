@@ -25,6 +25,8 @@ public:
 
     /* DMA接收启动 */
     void startDMA();
+	/* DMA状态清空 */
+	void resetRx();
 
     /* IDLE中断处理 */
     void irqHandler();
@@ -36,17 +38,16 @@ public:
     void setAtMode(bool enable);
 
     /* 获取队列 */
-    QueueHandle_t getMavQueue() { return m_mavQueue; }
+    osMessageQueueId_t getMavQueue() { return m_mavQueue; }
 	
 	osMessageQueueId_t getAtQueue() { return m_atQueue; }
 	
 	UART_HandleTypeDef* getHandle() { return m_huart; }
 	
 	osMutexId_t getMutex() { return m_mutex; }
+	
 	bool isAtMode() const { return m_inAtMode; }
 
-
-	
 private:
     UART_HandleTypeDef* m_huart;
 
@@ -54,11 +55,11 @@ private:
     uint8_t m_dmaBuf[UART1_DMA_RX_BUF_SIZE];
     volatile uint16_t m_lastPos;
 	
-		volatile bool m_inAtMode;
+	volatile bool m_inAtMode;
 
     /* 队列 */
     osMessageQueueId_t m_atQueue;
-    QueueHandle_t m_mavQueue;
+    osMessageQueueId_t m_mavQueue;
 
     /* 互斥 */
     osMutexId_t m_mutex;
