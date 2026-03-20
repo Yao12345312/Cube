@@ -45,6 +45,65 @@ bool Uart1Driver::init()
     return true;
 }
 
+void Uart1Driver::enterAtMode()
+{
+    m_inAtMode = true;
+
+    /* 停DMA */
+    HAL_UART_DMAStop(m_huart);
+
+    /* 等待发送完成 */
+    while (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_TC) == RESET);
+
+    /* 关闭UART */
+    HAL_UART_DeInit(m_huart);
+
+    /* 重新初始化（普通模式） */
+    HAL_UART_Init(m_huart);
+}
+
+void Uart1Driver::exitAtMode()
+{
+   m_inAtMode = false;
+
+    HAL_UART_DeInit(m_huart);
+    HAL_UART_Init(m_huart);
+
+    startDMA();
+}
+
+bool Uart1Driver::atSend(const uint8_t* data, uint16_t len)
+{
+    if (!data || len == 0) return false;
+
+    if (HAL_UART_Transmit(m_huart, (uint8_t*)data, len, 1000) != HAL_OK)
+        return false;
+
+    return true;
+}
+
+int Uart1Driver::atRecv(uint8_t* buf, uint16_t len, uint32_t timeout)
+{
+    if (!buf || len == 0) return 0;
+
+    uint16_t idx = 0;
+    uint8_t ch;
+
+    uint32_t start = HAL_GetTick();
+
+    while ((HAL_GetTick() - start) < timeout)
+    {
+        if (HAL_UART_Receive(m_huart, &ch, 1, 50) == HAL_OK) // 50ms等待
+        {
+            buf[idx++] = ch;
+            if (ch == '\n' || idx >= len)
+                break;
+        }
+    }
+
+    return idx;
+}
+
 /* ================= 启动DMA ================= */
 
 void Uart1Driver::startDMA()

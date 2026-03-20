@@ -27,7 +27,17 @@ Project File Date:  03/20/2026
 <h2>Output:</h2>
 *** Using Compiler 'V6.10.1', folder: 'D:\keil 51\ARM\ARMCLANG\Bin'
 Build target 'Target 1'
-".\Objects\project.axf" - 0 Error(s), 0 Warning(s).
+Drivers/KT6368A.cpp(103): warning: format specifies type 'long' but the argument has type 'std::uint32_t' (aka 'unsigned int') [-Wformat]
+        printf("baud=%ld resp=%s\n", baud, resp);
+                     ~~~             ^~~~
+                     %u
+1 warning generated.
+compiling KT6368A.cpp...
+compiling main.cpp...
+linking...
+Program Size: Code=106500 RO-data=5588 RW-data=60 ZI-data=23812  
+FromELF: creating hex file...
+".\Objects\project.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -50,7 +60,7 @@ Package Vendor: Keil
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.4.0
-Build Time Elapsed:  00:00:01
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>

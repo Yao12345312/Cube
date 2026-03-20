@@ -27,6 +27,14 @@ public:
     void startDMA();
 	/* DMA状态清空 */
 	void resetRx();
+	
+	void enterAtMode();
+
+	void exitAtMode();
+
+	bool atSend(const uint8_t* data, uint16_t len);
+
+	int atRecv(uint8_t* buf, uint16_t len, uint32_t timeout);
 
     /* IDLE中断处理 */
     void irqHandler();

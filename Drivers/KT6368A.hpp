@@ -13,10 +13,7 @@ public:
 
     bool init();
 
-    uint16_t sendAT(const char* at_cmd,
-                    char* resp_buf,
-                    uint16_t resp_len,
-                    uint32_t timeout_ms);
+    uint16_t sendAT(const char* cmd, char* resp, uint16_t len);
 
     bool autoBaudScan();
 
