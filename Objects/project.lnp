@@ -1,5 +1,7 @@
 --cpu Cortex-M7.fp.dp
 ".\objects\main.o"
+".\objects\task_control.o"
+".\objects\task_communication.o"
 ".\objects\stm32h7xx_it.o"
 ".\objects\system_stm32h7xx.o"
 ".\objects\stm32h7xx_hal_timebase_tim.o"

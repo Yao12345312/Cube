@@ -54,11 +54,22 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
-  Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \
+  USER\task_Control.hpp Middleware/RTOS/include\FreeRTOS.h \
+  Middleware/RTOS\FreeRTOSConfig.h Middleware/RTOS/include/projdefs.h \
+  Middleware/RTOS/include/portable.h \
   Middleware/RTOS/include/deprecated_definitions.h \
   Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/RTOS/include/mpu_wrappers.h \
-  Middleware/RTOS/include\semphr.h Middleware/RTOS/include/queue.h \
-  Middleware/RTOS/include/task.h Middleware/RTOS/include/list.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint
+  Middleware/RTOS/include/mpu_wrappers.h Middleware/RTOS/include\task.h \
+  Middleware/RTOS/include/list.h \
+  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h USER\task_Communication.hpp \
+  Drivers/uart3Driver.hpp \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h BSP\board.hpp \
+  Drivers\oled.hpp Drivers\QMC5883P.hpp Drivers\uart1Driver.hpp \
+  Middleware/RTOS/include\queue.h Middleware/RTOS/include\semphr.h \
+  Drivers\led.hpp D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint \
+  Drivers\BMI088.hpp Drivers/bmi08x.h Drivers/bmi08.h \
+  Drivers/bmi08_defs.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h Drivers\can.hpp \
+  Drivers\KT6368A.hpp Drivers\key.hpp

@@ -1,12 +1,23 @@
-./objects/board.o: BSP/board.cpp BSP/board.hpp \
+./objects/task_control.o: USER/task_Control.cpp USER/task_Control.hpp \
+  Middleware/RTOS/include\FreeRTOS.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stddef.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\__config \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stddef.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\__nullptr \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdint.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdint.h \
+  Middleware/RTOS\FreeRTOSConfig.h Middleware/RTOS/include/projdefs.h \
+  Middleware/RTOS/include/portable.h \
+  Middleware/RTOS/include/deprecated_definitions.h \
+  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
+  Middleware/RTOS/include/mpu_wrappers.h Middleware/RTOS/include\task.h \
+  Middleware/RTOS/include/list.h \
+  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h BSP\board.hpp \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal.h \
   USER\stm32h7xx_hal_conf.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_rcc.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_def.h CMSIS\stm32h7xx.h \
   CMSIS/stm32h743xx.h CMSIS/core_cm7.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdint.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\__config \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdint.h \
   D:/keil\ 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include\cmsis_version.h \
   CMSIS/cmsis_compiler.h CMSIS/cmsis_armclang.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
@@ -14,9 +25,6 @@
   D:/keil\ 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include\mpu_armv7.h \
   CMSIS/system_stm32h7xx.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stddef.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stddef.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\__nullptr \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\math.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\math.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\type_traits \
@@ -54,15 +62,9 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  Drivers\oled.hpp Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h \
-  Drivers\QMC5883P.hpp Drivers\uart1Driver.hpp \
-  Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
-  Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \
-  Middleware/RTOS/include/deprecated_definitions.h \
-  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/RTOS/include/mpu_wrappers.h Middleware/RTOS/include\queue.h \
-  Middleware/RTOS/include/task.h Middleware/RTOS/include/list.h \
-  Middleware/RTOS/include\semphr.h Drivers\uart3Driver.hpp \
+  Drivers\oled.hpp Drivers\QMC5883P.hpp Drivers\uart1Driver.hpp \
+  Middleware/RTOS/include\queue.h Middleware/RTOS/include\semphr.h \
+  Drivers\uart3Driver.hpp \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h Drivers\led.hpp \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint \
@@ -70,12 +72,6 @@
   Drivers/bmi08_defs.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h Drivers\can.hpp \
-  Drivers\KT6368A.hpp Drivers\key.hpp Drivers\TFCard.hpp LittleFS\lfs.h \
-  LittleFS/lfs_util.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\string.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\inttypes.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\inttypes.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdlib.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdlib.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\assert.h
+  Drivers\KT6368A.hpp Drivers\key.hpp Math\MahonyAHRS.hpp \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cmath \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdio

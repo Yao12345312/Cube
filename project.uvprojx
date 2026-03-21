@@ -389,6 +389,16 @@
               <FilePath>.\USER\main.cpp</FilePath>
             </File>
             <File>
+              <FileName>task_Control.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\USER\task_Control.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>task_Communication.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\USER\task_Communication.cpp</FilePath>
+            </File>
+            <File>
               <FileName>stm32h7xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\USER\stm32h7xx_it.c</FilePath>

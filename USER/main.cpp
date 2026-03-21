@@ -1,16 +1,10 @@
 #include "board.hpp"  // Device header
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h" // 如果需要使用队列等功能
+#include "queue.h" 
 #include "cmsis_os2.h"
-#include "BMI088.hpp"
-#include "QMC5883P.hpp"
 #include "uart3Driver.hpp"
-#include "led.hpp"
-#include "key.hpp"
-#include "oled.hpp"
-#include "MahonyAHRS.hpp"
-#include "KT6368A.hpp"
+#include "drv_Main.hpp"
 
 #if 1 //如果没有这段，则需要在target选项中选择使用USE microLIB
 
@@ -40,106 +34,33 @@
 	}
 #endif
 
-extern void MX_GPIO_Init(void);
-extern void MX_I2C2_Init(void);
-extern void MX_SPI1_Init(void);
-extern void MX_USART1_UART_Init(void);
-extern void MX_USART3_UART_Init(void);
-extern void MX_DMA_Init(void);
-extern void MX_TIM2_Init(void);
-extern void MX_SPI2_Init(void);
-extern void MX_FDCAN1_Init(void);
-//串口对象句柄
-extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart3;
-extern Uart3Driver* uart3;
-extern Uart1Driver* uart1;
-
-//LED对象句柄
-extern TIM_HandleTypeDef htim2;
-extern LedPwm* g_ledPwm;
-
-//按键对象
-extern Key key1;
-
-//oled结构体
-//extern u8g2_t u8g2;
-extern oled_dev_t oled_dev;
-
-//BMI088
-int8_t result;
-extern Bmi088 imu;
-
-//磁力计
-extern QMC5883P g_qmc5883p;
-QMC5883P::MagData mag;
-
-//蓝牙
-extern BluetoothDriver* g_bt;
-
-MahonyAHRS ahrs(250.0f, 2.0f, 0.001f);
-
 void SystemClock_Config(void);
-void StartDefaultTask(void* argument);
-//任务对象句柄
-osThreadId_t defaultTaskHandle;
+void DriverInitTask(void* argument);
+//初始化任务对象句柄
+osThreadId_t initTaskHandle;
 //线程描述结构体
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 3072,
+  .stack_size = 1024,
   .priority = (osPriority_t) osPriorityNormal,
 };
 
 int main(void)
 {
-
   //HAL库初始化
   HAL_Init();
   //系统时钟初始化
   SystemClock_Config();
-  //外设初始化
-  MX_GPIO_Init();	
-  MX_I2C2_Init();	
-  MX_SPI1_Init();
-  MX_SPI2_Init();
-  MX_USART1_UART_Init();
-  MX_USART3_UART_Init();
-  MX_DMA_Init();
-  MX_TIM2_Init();
-  MX_FDCAN1_Init();
-
-  static Uart3Driver uart3Instance(&huart3);
-  uart3 = &uart3Instance;
-
-  static Uart1Driver uart1Instance(&huart1);
-  uart1 = &uart1Instance;
-
-  static BluetoothDriver bt(uart1);
-  g_bt = &bt;
-
-
-  static LedPwm ledPwm(&htim2);
-  g_ledPwm = &ledPwm;
-  if (uart3->init() && uart1->init()) {
-        printf("UARTDriver initialized successfully!\r\n");
-    }
-
-  if (ledPwm.init()) {
-        printf("LED PWM initialized successfully!\r\n");
-    }
-
-  if (g_bt->init()) {
-        printf("kt6368a initialized successfully!\r\n");
-    }
-
-  g_ledPwm->setRGB(100, 0, 0);
-
+	
   osKernelInitialize();
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
+  initTaskHandle = osThreadNew(DriverInitTask, NULL, &defaultTask_attributes);
+	
+  if (initTaskHandle == NULL) {
+        Error_Handler();
+    }
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -147,9 +68,18 @@ int main(void)
   /* Start scheduler */
   osKernelStart();
 
+  while(1){} 
 
-  while(1){} // 调度器启动后，不会执行到这里
+}
 
+void DriverInitTask(void * argument)
+{	
+	init_drv_Main();
+	
+	create_application_tasks();
+	
+	//删除初始化任务
+	vTaskDelete(NULL);
 }
 
 void SystemClock_Config(void)
@@ -207,106 +137,6 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 }
-
-
-void StartDefaultTask(void * argument)
-{	
-	OLED_Hw_Init(&oled_dev);
-	OLED_Init(&oled_dev);
-
-	OLED_Clear(&oled_dev);
-
-	float ax, ay, az;
-    float gx, gy, gz;
-	//等待蓝牙模块稳定
-	osDelay(3000);
-	if(!g_bt->autoBaudScan())
-	{
-	Error_Handler();
-	}
-
-    if(imu.init()!=BMI08_OK)
-	{
-	Error_Handler();
-	}
-
-	if (!g_qmc5883p.init())
-    {
-	Error_Handler();
-    }
-
-
-	OLED_ShowString(&oled_dev, 0, 0,"mag calibrate");
-	OLED_ShowString(&oled_dev, 1, 0,"push key1");
-
-	key1.update();	
-	Key::Event event = key1.getEvent();	
-	//磁力计校准
-	while(event != Key::Event::LongPress)
-	{
-	key1.update();	
-	event = key1.getEvent();	
-	}
-
-	g_qmc5883p.startCalibration();
-
-	for(int i=0;i<2500;i++)
-	{
-    g_qmc5883p.readRaw(mag);
-    g_qmc5883p.convertMagFrame(mag);
-
-    g_qmc5883p.updateCalibration(mag);
-
-    osDelay(10);
-	}
-
-	g_qmc5883p.finishCalibration();
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ;  
-	OLED_ShowString(&oled_dev, 1, 0,"finished"); 
-    while (1)
-    {	
-
-    // 读取加速度计数据
-    imu.getAccelData(ax, ay, az);
-    // 读取陀螺仪数据   
-	imu.getGyroData(gx, gy, gz);
-
-	g_qmc5883p.readRaw(mag);
-
-	g_qmc5883p.convertMagFrame(mag);
-
-        ahrs.update(
-            gx * DEG_TO_RAD,
-            gy * DEG_TO_RAD,
-            gz * DEG_TO_RAD,
-            ax, ay, az,
-            (float)mag.x,
-            (float)mag.y,
-            (float)mag.z
-        );
-
-        float roll, pitch, yaw;
-        ahrs.getEuler(roll, pitch, yaw);	
-
- 	printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
-//		key1.update();
-
-//        Key::Event event = key1.getEvent();
-
-//        if (event == Key::Event::ShortPress)
-//        {
-//            g_ledPwm->setRGB(0, 100, 0);
-//        }
-//        else if (event == Key::Event::LongPress)
-//        {
-//            g_ledPwm->setRGB(0, 0, 100);
-//        }
-
-        osDelay(1);
-    }
-}
-
 
 extern "C" void Error_Handler(void)
 {

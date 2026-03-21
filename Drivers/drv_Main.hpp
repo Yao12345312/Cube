@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stm32h7xx_hal.h"
-#include "FreeRTOS.h"
-#include "semphr.h"
-#include <cstdint>
 
+void init_drv_Main(void);
+
+void create_application_tasks(void);

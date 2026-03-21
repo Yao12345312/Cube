@@ -1,6 +1,4 @@
 #include "board.hpp"
-#include "BMI088.hpp"
-#include "QMC5883P.hpp"
 #include "key.hpp"
 #include "TFCard.hpp"
 #include "uart1Driver.hpp"
@@ -9,61 +7,249 @@
 #include "oled.hpp"
 #include "can.hpp"
 #include "KT6368A.hpp"
+#include "BMI088.hpp"
+#include "QMC5883P.hpp"
 
 extern "C" {
     void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim);
 }
- 
+
+// ==================== HAL句柄定义（全局，由CubeMX生成） ==================== 
 I2C_HandleTypeDef hi2c2;
-
 SPI_HandleTypeDef hspi1;
-
 SPI_HandleTypeDef hspi2;
-
 SD_HandleTypeDef hsd1;
-
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
-
 TIM_HandleTypeDef htim2;
-
 FDCAN_HandleTypeDef hfdcan1;
 
-/* 全局传感器对象 */
-QMC5883P g_qmc5883p(&hi2c2);
+//=======================Meyers Singleton 实现 =====================
 
-//UART3驱动对象
-Uart3Driver* uart3 = nullptr;
+// 每个单例都提供静态访问接口
 
-//UART1驱动对象
-Uart1Driver* uart1 = nullptr;
-
-//LED驱动对象
-LedPwm* g_ledPwm = nullptr;
-
-Bmi088 imu(   &hspi1,
-              BMI_ACS_Port, BMI_ACS_Pin,
-              BMI_GCS_Port, BMI_GCS_Pin);
-
-
-CanDriver can1;
-
-
-oled_dev_t oled_dev = {
-    .spi = &hspi2,  // 使用SPI2
-    .dc_port = GPIOE,
-    .dc_pin = GPIO_PIN_12,
-    .rst_port = GPIOE,
-    .rst_pin = GPIO_PIN_15
+// 1. QMC5883P 磁力计
+class QMC5883PWrapper {
+public:
+    static QMC5883P& getInstance() {
+        static QMC5883P instance(&hi2c2);
+        return instance;
+    }
+    
+    QMC5883PWrapper(const QMC5883PWrapper&) = delete;
+    QMC5883PWrapper& operator=(const QMC5883PWrapper&) = delete;
+    
+private:
+    QMC5883PWrapper() = default;
 };
 
-Key key1(KEY1_Port, KEY1_PIN,  Key::ActiveLevel::High, 2000, 20);
-Key key2(KEY2_Port, KEY2_PIN,  Key::ActiveLevel::High, 2000, 20);
-Key key3(KEY3_Port, KEY3_PIN,  Key::ActiveLevel::High, 2000, 20);
+// 2. UART3驱动
+class Uart3DriverWrapper {
+public:
+    static Uart3Driver& getInstance() {
+        static Uart3Driver instance(&huart3);
+        return instance;
+    }
+    
+    Uart3DriverWrapper(const Uart3DriverWrapper&) = delete;
+    Uart3DriverWrapper& operator=(const Uart3DriverWrapper&) = delete;
+    
+private:
+    Uart3DriverWrapper() = default;
+};
 
+// 3. UART1驱动
+class Uart1DriverWrapper {
+public:
+    static Uart1Driver& getInstance() {
+        static Uart1Driver instance(&huart1);
+        return instance;
+    }
+    
+    Uart1DriverWrapper(const Uart1DriverWrapper&) = delete;
+    Uart1DriverWrapper& operator=(const Uart1DriverWrapper&) = delete;
+    
+private:
+    Uart1DriverWrapper() = default;
+};
 
+// 4. LED PWM驱动
+class LedPwmWrapper {
+public:
+    static LedPwm& getInstance() {
+        static LedPwm instance(&htim2);
+        return instance;
+    }
+    
+    LedPwmWrapper(const LedPwmWrapper&) = delete;
+    LedPwmWrapper& operator=(const LedPwmWrapper&) = delete;
+    
+private:
+    LedPwmWrapper() = default;
+};
+
+// 5. BMI088 IMU驱动
+class Bmi088Wrapper {
+public:
+    static Bmi088& getInstance() {
+        static Bmi088 instance(&hspi1, 
+                                BMI_ACS_Port, BMI_ACS_Pin,
+                                BMI_GCS_Port, BMI_GCS_Pin);
+        return instance;
+    }
+    
+    Bmi088Wrapper(const Bmi088Wrapper&) = delete;
+    Bmi088Wrapper& operator=(const Bmi088Wrapper&) = delete;
+    
+private:
+    Bmi088Wrapper() = default;
+};
+
+// 6. CAN驱动
+class CanDriverWrapper {
+public:
+    static CanDriver& getInstance() {
+        static CanDriver instance;
+        return instance;
+    }
+    
+    CanDriverWrapper(const CanDriverWrapper&) = delete;
+    CanDriverWrapper& operator=(const CanDriverWrapper&) = delete;
+    
+private:
+    CanDriverWrapper() = default;
+};
+
+// 7. OLED设备
+class OledDevWrapper {
+public:
+    static oled_dev_t& getInstance() {
+        static oled_dev_t instance = {
+            .spi = &hspi2,
+            .dc_port = OLED_DC_Port,
+            .dc_pin = OLED_DC_Pin,
+            .rst_port = OLED_RST_Port,
+            .rst_pin = OLED_RST_Pin
+        };
+        return instance;
+    }
+    
+    OledDevWrapper(const OledDevWrapper&) = delete;
+    OledDevWrapper& operator=(const OledDevWrapper&) = delete;
+    
+private:
+    OledDevWrapper() = default;
+};
+
+// 8. 按键对象（全局）
+Key key1(KEY1_Port, KEY1_PIN, Key::ActiveLevel::High, 2000, 20);
+Key key2(KEY2_Port, KEY2_PIN, Key::ActiveLevel::High, 2000, 20);
+Key key3(KEY3_Port, KEY3_PIN, Key::ActiveLevel::High, 2000, 20);
+
+// 9. 蓝牙驱动（依赖UART1）
+class BluetoothDriverWrapper {
+public:
+    static BluetoothDriver& getInstance() {
+        // 关键修改：调用函数获取UART1引用
+        Uart1Driver& uart1 = Uart1DriverWrapper::getInstance();
+        static BluetoothDriver instance(&uart1);  // 如果构造函数接受指针
+        // static BluetoothDriver instance(uart1);  // 如果构造函数接受引用
+        return instance;
+    }
+    
+    BluetoothDriverWrapper(const BluetoothDriverWrapper&) = delete;
+    BluetoothDriverWrapper& operator=(const BluetoothDriverWrapper&) = delete;
+    
+private:
+    BluetoothDriverWrapper() = default;
+};
+
+//初始化管理器类
+class BoardInitializer {
+public:
+    static bool initAll() {
+        bool success = true;
+        
+        // 按依赖顺序初始化
+        
+        // 1. 初始化UART驱动
+        if (!Uart3DriverWrapper::getInstance().init()) {
+            printf("UART3 init failed!\r\n");
+            success = false;
+        }
+        
+        if (!Uart1DriverWrapper::getInstance().init()) {
+            printf("UART1 init failed!\r\n");
+            success = false;
+        }
+        
+        // 2. 初始化LED PWM
+        if (!LedPwmWrapper::getInstance().init()) {
+            printf("LED PWM init failed!\r\n");
+            success = false;
+        }
+        
+        // 3. 初始化蓝牙
+        if (!BluetoothDriverWrapper::getInstance().init()) {
+            printf("Bluetooth init failed!\r\n");
+            success = false;
+        }
+        
+        // 4. 初始化OLED硬件
+        OLED_Hw_Init(&OledDevWrapper::getInstance());
+        OLED_Init(&OledDevWrapper::getInstance());
+        
+        // 5. 初始化IMU
+        if (Bmi088Wrapper::getInstance().init() != BMI08_OK) {
+            printf("IMU init failed!\r\n");
+            success = false;
+        }
+        
+        // 6. 初始化磁力计
+        if (!QMC5883PWrapper::getInstance().init()) {
+            printf("QMC5883P init failed!\r\n");
+            success = false;
+        }
+        
+        // 7. 初始化CAN（如果需要）
+        // CanDriverWrapper::getInstance().init();
+        
+        if (success) {
+            printf("All peripherals initialized successfully!\r\n");
+        }
+        
+        return success;
+    }
+};
+//通过函数访问board各个模块
+namespace Board {
+    // 获取模块的引用
+    QMC5883P& getQMC5883P() { return QMC5883PWrapper::getInstance(); }
+	
+    Uart3Driver& getUart3() { return Uart3DriverWrapper::getInstance(); }
+	
+    Uart1Driver& getUart1() { return Uart1DriverWrapper::getInstance(); }
+	
+    LedPwm& getLedPwm() { return LedPwmWrapper::getInstance(); }
+	
+    Bmi088& getImu() { return Bmi088Wrapper::getInstance(); }
+	
+    CanDriver& getCan() { return CanDriverWrapper::getInstance(); }
+	
+    oled_dev_t& getOled() { return OledDevWrapper::getInstance(); }
+	
+    BluetoothDriver& getBluetooth() { return BluetoothDriverWrapper::getInstance(); }
+    
+    // 获取按键
+    Key& getKey1() { return key1; }
+    Key& getKey2() { return key2; }
+    Key& getKey3() { return key3; }
+    
+    // 统一初始化函数
+    bool init() { return BoardInitializer::initAll(); }
+}
 
 void MX_GPIO_Init(void)
 {
