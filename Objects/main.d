@@ -64,11 +64,10 @@
   Drivers/bmi08x.h Drivers/bmi08.h Drivers/bmi08_defs.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h Drivers\QMC5883P.hpp \
-  Drivers\uart1Driver.hpp Middleware/RTOS/include\semphr.h \
   Drivers\uart3Driver.hpp \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h Drivers\led.hpp \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint Drivers\key.hpp \
-  Drivers\oled.hpp Math\MahonyAHRS.hpp \
+  Middleware/RTOS/include\semphr.h Drivers\oled.hpp Math\MahonyAHRS.hpp \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cmath \
-  Drivers\KT6368A.hpp
+  Drivers\KT6368A.hpp Drivers/uart1Driver.hpp

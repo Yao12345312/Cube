@@ -1,5 +1,5 @@
 Dependencies for Project 'project', Target 'Target 1': (DO NOT MODIFY !)
-F (.\USER\main.cpp)(0x69BE590E)(-xc++ -std=c++11 --target=arm-arm-none-eabi -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ./CMSIS -I ./Drivers -I ./Math -I ./Middleware -I ./USER -I ./HALLIB/STM32H7xx_HAL_Driver/Inc -I ./BSP -I ./Middleware/RTOS/include -I ./Middleware/RTOS -I ./Middleware/RTOS/portable/ARM_CM7/r0p1 -I ./Middleware/RTOS/CMSIS_RTOS_V2 -I ./Middleware/MAVlink -I ./Middleware/MAVlink/common -I ./Middleware/MAVlink/standard -I ./LittleFS -I ./u8g2-I./RTE/_Target_1-I"D:/keil 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include"-I"D:/keil 51/ARM/PACK/Keil/STM32H7xx_DFP/3.1.1/Drivers/CMSIS/Device/ST/STM32H7xx/Include"-D__UVISION_VERSION="526" -D_RTE_ -DSTM32H743xx -DUSE_HAL_DRIVER -DSTM32H743xx-o ./objects/main.o -MD)
+F (.\USER\main.cpp)(0x69BE5C33)(-xc++ -std=c++11 --target=arm-arm-none-eabi -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ./CMSIS -I ./Drivers -I ./Math -I ./Middleware -I ./USER -I ./HALLIB/STM32H7xx_HAL_Driver/Inc -I ./BSP -I ./Middleware/RTOS/include -I ./Middleware/RTOS -I ./Middleware/RTOS/portable/ARM_CM7/r0p1 -I ./Middleware/RTOS/CMSIS_RTOS_V2 -I ./Middleware/MAVlink -I ./Middleware/MAVlink/common -I ./Middleware/MAVlink/standard -I ./LittleFS -I ./u8g2-I./RTE/_Target_1-I"D:/keil 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include"-I"D:/keil 51/ARM/PACK/Keil/STM32H7xx_DFP/3.1.1/Drivers/CMSIS/Device/ST/STM32H7xx/Include"-D__UVISION_VERSION="526" -D_RTE_ -DSTM32H743xx -DUSE_HAL_DRIVER -DSTM32H743xx-o ./objects/main.o -MD)
 I (BSP\board.hpp)(0x6989A83D)
 I (HALLIB\STM32H7xx_HAL_Driver\Inc\stm32h7xx_hal.h)(0x671B745B)
 I (USER\stm32h7xx_hal_conf.h)(0x69BA1CC2)
@@ -77,18 +77,18 @@ I (Drivers\bmi08_defs.h)(0x66EA5AE0)
 I (D:\keil 51\ARM\ARMCLANG\include\libcxx\stdbool.h)(0x56C7B584)
 I (D:\keil 51\ARM\ARMCLANG\include\stdbool.h)(0x5AB0B858)
 I (Drivers\QMC5883P.hpp)(0x69AD3CF0)
-I (Drivers\uart1Driver.hpp)(0x69BD2311)
-I (Middleware\RTOS\include\semphr.h)(0x671B73C5)
 I (Drivers\uart3Driver.hpp)(0x69905091)
 I (D:\keil 51\ARM\ARMCLANG\include\libcxx\stdio.h)(0x5A6914D2)
 I (D:\keil 51\ARM\ARMCLANG\include\stdio.h)(0x5AB0B854)
 I (Drivers\led.hpp)(0x6990884F)
 I (D:\keil 51\ARM\ARMCLANG\include\libcxx\cstdint)(0x551CD06A)
 I (Drivers\key.hpp)(0x69909EE6)
+I (Middleware\RTOS\include\semphr.h)(0x671B73C5)
 I (Drivers\oled.hpp)(0x69A03ACF)
 I (Math\MahonyAHRS.hpp)(0x69A6A284)
 I (D:\keil 51\ARM\ARMCLANG\include\libcxx\cmath)(0x59642996)
 I (Drivers\KT6368A.hpp)(0x69BD2302)
+I (Drivers\uart1Driver.hpp)(0x69BD2311)
 F (.\USER\stm32h7xx_it.c)(0x69BD13ED)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ./CMSIS -I ./Drivers -I ./Math -I ./Middleware -I ./USER -I ./HALLIB/STM32H7xx_HAL_Driver/Inc -I ./BSP -I ./Middleware/RTOS/include -I ./Middleware/RTOS -I ./Middleware/RTOS/portable/ARM_CM7/r0p1 -I ./Middleware/RTOS/CMSIS_RTOS_V2 -I ./Middleware/MAVlink -I ./Middleware/MAVlink/common -I ./Middleware/MAVlink/standard -I ./LittleFS -I ./u8g2-I./RTE/_Target_1-I"D:/keil 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include"-I"D:/keil 51/ARM/PACK/Keil/STM32H7xx_DFP/3.1.1/Drivers/CMSIS/Device/ST/STM32H7xx/Include"-D__UVISION_VERSION="526" -D_RTE_ -DSTM32H743xx -DUSE_HAL_DRIVER -DSTM32H743xx-o ./objects/stm32h7xx_it.o -MD)
 I (HALLIB\STM32H7xx_HAL_Driver\Inc\stm32h7xx_hal.h)(0x671B745B)
 I (USER\stm32h7xx_hal_conf.h)(0x69BA1CC2)
