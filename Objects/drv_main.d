@@ -1,4 +1,4 @@
-./objects/qmc5883p.o: Drivers/QMC5883P.cpp Drivers/QMC5883P.hpp \
+./objects/drv_main.o: Drivers/drv_Main.cpp Drivers/drv_Main.hpp \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal.h \
   USER\stm32h7xx_hal_conf.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_rcc.h \
@@ -54,4 +54,11 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h
+  Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
+  Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \
+  Middleware/RTOS/include/deprecated_definitions.h \
+  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
+  Middleware/RTOS/include/mpu_wrappers.h \
+  Middleware/RTOS/include\semphr.h Middleware/RTOS/include/queue.h \
+  Middleware/RTOS/include/task.h Middleware/RTOS/include/list.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint

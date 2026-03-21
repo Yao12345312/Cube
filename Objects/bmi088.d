@@ -57,7 +57,7 @@
   Drivers/bmi08x.h Drivers/bmi08.h Drivers/bmi08_defs.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h \
-  Middleware/FreeRTOS/CMSIS_RTOS_V2\cmsis_os2.h \
+  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\string.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h BSP\board.hpp \
   Drivers/uart3Driver.hpp \

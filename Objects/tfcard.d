@@ -66,5 +66,5 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  Middleware/FreeRTOS/CMSIS_RTOS_V2\cmsis_os2.h \
+  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstring

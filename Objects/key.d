@@ -54,14 +54,11 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  Middleware/FreeRTOS/include\FreeRTOS.h \
-  Middleware/FreeRTOS\FreeRTOSConfig.h \
-  Middleware/FreeRTOS/include/projdefs.h \
-  Middleware/FreeRTOS/include/portable.h \
-  Middleware/FreeRTOS/include/deprecated_definitions.h \
-  Middleware/FreeRTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/FreeRTOS/include/mpu_wrappers.h \
-  Middleware/FreeRTOS/include\semphr.h \
-  Middleware/FreeRTOS/include/queue.h Middleware/FreeRTOS/include/task.h \
-  Middleware/FreeRTOS/include/list.h \
+  Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
+  Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \
+  Middleware/RTOS/include/deprecated_definitions.h \
+  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
+  Middleware/RTOS/include/mpu_wrappers.h \
+  Middleware/RTOS/include\semphr.h Middleware/RTOS/include/queue.h \
+  Middleware/RTOS/include/task.h Middleware/RTOS/include/list.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint

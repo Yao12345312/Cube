@@ -58,16 +58,14 @@
   Drivers/bmi08_defs.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h Drivers\QMC5883P.hpp \
-  Drivers\key.hpp Middleware/FreeRTOS/include\FreeRTOS.h \
-  Middleware/FreeRTOS\FreeRTOSConfig.h \
-  Middleware/FreeRTOS/include/projdefs.h \
-  Middleware/FreeRTOS/include/portable.h \
-  Middleware/FreeRTOS/include/deprecated_definitions.h \
-  Middleware/FreeRTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/FreeRTOS/include/mpu_wrappers.h \
-  Middleware/FreeRTOS/include\semphr.h \
-  Middleware/FreeRTOS/include/queue.h Middleware/FreeRTOS/include/task.h \
-  Middleware/FreeRTOS/include/list.h \
+  Drivers\key.hpp Middleware/RTOS/include\FreeRTOS.h \
+  Middleware/RTOS\FreeRTOSConfig.h Middleware/RTOS/include/projdefs.h \
+  Middleware/RTOS/include/portable.h \
+  Middleware/RTOS/include/deprecated_definitions.h \
+  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
+  Middleware/RTOS/include/mpu_wrappers.h \
+  Middleware/RTOS/include\semphr.h Middleware/RTOS/include/queue.h \
+  Middleware/RTOS/include/task.h Middleware/RTOS/include/list.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint \
   Drivers\TFCard.hpp LittleFS\lfs.h LittleFS/lfs_util.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\string.h \
@@ -79,6 +77,6 @@
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\assert.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h \
-  Middleware/FreeRTOS/CMSIS_RTOS_V2\cmsis_os2.h Drivers\uart1Driver.hpp \
+  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h Drivers\uart1Driver.hpp \
   Drivers\uart3Driver.hpp Drivers\led.hpp Drivers\oled.hpp \
   Drivers\can.hpp Drivers\KT6368A.hpp

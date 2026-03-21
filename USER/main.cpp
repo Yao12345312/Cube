@@ -5,6 +5,7 @@
 #include "cmsis_os2.h"
 #include "BMI088.hpp"
 #include "QMC5883P.hpp"
+#include "uart1Driver.hpp"
 #include "uart3Driver.hpp"
 #include "led.hpp"
 #include "key.hpp"
@@ -80,7 +81,7 @@ extern BluetoothDriver* g_bt;
 MahonyAHRS ahrs(250.0f, 2.0f, 0.001f);
 
 void SystemClock_Config(void);
-void StartDefaultTask(void* argument);
+void DriverInit_task(void* argument);
 //任务对象句柄
 osThreadId_t defaultTaskHandle;
 //线程描述结构体
@@ -98,47 +99,14 @@ int main(void)
   //系统时钟初始化
   SystemClock_Config();
   //外设初始化
-  MX_GPIO_Init();	
-  MX_I2C2_Init();	
-  MX_SPI1_Init();
-  MX_SPI2_Init();
-  MX_USART1_UART_Init();
-  MX_USART3_UART_Init();
-  MX_DMA_Init();
-  MX_TIM2_Init();
-  MX_FDCAN1_Init();
 
-  static Uart3Driver uart3Instance(&huart3);
-  uart3 = &uart3Instance;
-  
-  static Uart1Driver uart1Instance(&huart1);
-  uart1 = &uart1Instance;
-  
-  static BluetoothDriver bt(uart1);
-  g_bt = &bt;
-
-  
-  static LedPwm ledPwm(&htim2);
-  g_ledPwm = &ledPwm;
-  if (uart3->init() && uart1->init()) {
-        printf("UARTDriver initialized successfully!\r\n");
-    }
-	
-  if (ledPwm.init()) {
-        printf("LED PWM initialized successfully!\r\n");
-    }
-  
-  if (g_bt->init()) {
-        printf("kt6368a initialized successfully!\r\n");
-    }
-  
   g_ledPwm->setRGB(100, 0, 0);
 	
   osKernelInitialize();
   
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(DriverInit_task, NULL, &defaultTask_attributes);
  
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -209,8 +177,9 @@ void SystemClock_Config(void)
 }
 
 
-void StartDefaultTask(void * argument)
+void DriverInit_task(void * argument)
 {	
+	
 	OLED_Hw_Init(&oled_dev);
 	OLED_Init(&oled_dev);
 	
@@ -235,10 +204,6 @@ void StartDefaultTask(void * argument)
 	Error_Handler();
     }
 	
-	
-	OLED_ShowString(&oled_dev, 0, 0,"mag calibrate");
-	OLED_ShowString(&oled_dev, 1, 0,"push key1");
-	
 	key1.update();	
 	Key::Event event = key1.getEvent();	
 	//磁力计校准
@@ -262,11 +227,9 @@ void StartDefaultTask(void * argument)
 	
 	g_qmc5883p.finishCalibration();
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ;  
-	OLED_ShowString(&oled_dev, 1, 0,"finished"); 
     while (1)
     {	
-     
+    
     // 读取加速度计数据
     imu.getAccelData(ax, ay, az);
     // 读取陀螺仪数据   
@@ -290,6 +253,7 @@ void StartDefaultTask(void * argument)
         ahrs.getEuler(roll, pitch, yaw);	
 		
  	printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
+			
 //		key1.update();
 
 //        Key::Event event = key1.getEvent();

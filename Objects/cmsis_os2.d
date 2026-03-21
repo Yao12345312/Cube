@@ -1,25 +1,21 @@
-./objects/cmsis_os2.o: Middleware/FreeRTOS/CMSIS_RTOS_V2/cmsis_os2.c \
+./objects/cmsis_os2.o: Middleware/RTOS/CMSIS_RTOS_V2/cmsis_os2.c \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h \
-  Middleware/FreeRTOS/CMSIS_RTOS_V2/cmsis_os2.h \
+  Middleware/RTOS/CMSIS_RTOS_V2/cmsis_os2.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdint.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stddef.h CMSIS\cmsis_compiler.h \
   CMSIS/cmsis_armclang.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
-  Middleware/FreeRTOS/include\FreeRTOS.h \
-  Middleware/FreeRTOS\FreeRTOSConfig.h \
-  Middleware/FreeRTOS/include/projdefs.h \
-  Middleware/FreeRTOS/include/portable.h \
-  Middleware/FreeRTOS/include/deprecated_definitions.h \
-  Middleware/FreeRTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/FreeRTOS/include/mpu_wrappers.h \
-  Middleware/FreeRTOS/include\task.h Middleware/FreeRTOS/include/list.h \
-  Middleware/FreeRTOS/include\event_groups.h \
-  Middleware/FreeRTOS/include/timers.h \
-  Middleware/FreeRTOS/include\semphr.h \
-  Middleware/FreeRTOS/include/queue.h \
-  Middleware/FreeRTOS/CMSIS_RTOS_V2/freertos_mpool.h \
-  Middleware/FreeRTOS/CMSIS_RTOS_V2/freertos_os2.h CMSIS\stm32h7xx.h \
+  Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
+  Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \
+  Middleware/RTOS/include/deprecated_definitions.h \
+  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
+  Middleware/RTOS/include/mpu_wrappers.h Middleware/RTOS/include\task.h \
+  Middleware/RTOS/include/list.h Middleware/RTOS/include\event_groups.h \
+  Middleware/RTOS/include/timers.h Middleware/RTOS/include\semphr.h \
+  Middleware/RTOS/include/queue.h \
+  Middleware/RTOS/CMSIS_RTOS_V2/freertos_mpool.h \
+  Middleware/RTOS/CMSIS_RTOS_V2/freertos_os2.h CMSIS\stm32h7xx.h \
   CMSIS/stm32h743xx.h CMSIS/core_cm7.h \
   D:/keil\ 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include\cmsis_version.h \
   D:/keil\ 51/ARM/PACK/ARM/CMSIS/5.7.0/CMSIS/Core/Include\mpu_armv7.h \
