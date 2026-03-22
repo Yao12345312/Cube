@@ -95,7 +95,7 @@ bool BluetoothDriver::autoBaudScan()
         HAL_UART_Init(huart);
 
         osDelay(300);
-
+		//清零resp
         memset(resp, 0, sizeof(resp));
 
         uint16_t len = sendAT("AT+QT\r\n", resp, sizeof(resp));
@@ -103,16 +103,17 @@ bool BluetoothDriver::autoBaudScan()
         printf("baud=%ld resp=%s\n", baud, resp);
 
         if (len > 0 && strstr(resp, "Q") != nullptr)
-        {
+        {	
+			//设置蓝牙模块名称
             sendAT("AT+BMKT6368A\r\n", resp, sizeof(resp));
             osDelay(200);
-
+			//关闭上电回传
             sendAT("AT+CR00\r\n", resp, sizeof(resp));
             osDelay(200);
-
+			//配置波特率
             sendAT("AT+CT09\r\n", resp, sizeof(resp));
-            osDelay(200);
-
+            osDelay(1000);
+			//芯片复位
             sendAT("AT+CZ\r\n", resp, sizeof(resp));
             osDelay(300);
 
@@ -123,7 +124,8 @@ bool BluetoothDriver::autoBaudScan()
             HAL_UART_Init(huart);
 
             m_uart->exitAtMode();   // 恢复DMA
-
+			
+			bluetooth_finish_initialization=true;
             return true;
         }
     }

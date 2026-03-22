@@ -65,7 +65,7 @@ void StartControlTask(void *argument)
         
         ahrs.getEuler(roll, pitch, yaw);
         
-		printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
+		//printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
         //°´¼ü¼ì²â
         key1.update();
         Key::Event event = key1.getEvent();

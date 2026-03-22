@@ -54,6 +54,7 @@
 ".\objects\stm32h7xx_hal_sd.o"
 ".\objects\stm32h7xx_hal_sd_ex.o"
 ".\objects\stm32h7xx_hal_fdcan.o"
+".\objects\mavlink_bridge.o"
 ".\objects\croutine.o"
 ".\objects\event_groups.o"
 ".\objects\list.o"

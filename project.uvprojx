@@ -694,6 +694,11 @@
           <GroupName>MAVlink</GroupName>
           <Files>
             <File>
+              <FileName>mavlink_bridge.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Middleware\MAVlink\mavlink_bridge.cpp</FilePath>
+            </File>
+            <File>
               <FileName>mavlink.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Middleware\MAVlink\standard\mavlink.h</FilePath>

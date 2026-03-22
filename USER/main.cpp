@@ -51,27 +51,22 @@ int main(void)
   HAL_Init();
   //系统时钟初始化
   SystemClock_Config();
-	
+  //os内核初始化
   osKernelInitialize();
-
-  /* Create the thread(s) */
-  /* creation of defaultTask */
+  //创建初始化任务
   initTaskHandle = osThreadNew(DriverInitTask, NULL, &defaultTask_attributes);
-	
+  
   if (initTaskHandle == NULL) {
         Error_Handler();
     }
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* Start scheduler */
+	
+  //开启任务调度器
   osKernelStart();
 
   while(1){} 
 
 }
-
+//驱动初始化任务
 void DriverInitTask(void * argument)
 {	
 	init_drv_Main();

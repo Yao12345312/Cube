@@ -1,4 +1,5 @@
 #include "task_Communication.hpp"
+#include "MAVLink_bridge.hpp"
 #include "board.hpp"
 #include <string>
 #include <cstdio>
@@ -16,27 +17,27 @@ const osThreadAttr_t communicationTask_attributes = {
 // 通信任务入口函数
 void StartCommunicationTask(void *argument)
 {
-	const uint8_t c[]="helloworld\r\n";
-    // 等待系统稳定
-    osDelay(100);
+
+    // 等待蓝牙模块稳定
+    osDelay(2500);
     
     // 打印启动信息
     printf("Communication Task Started!\r\n");
     
     // 获取硬件访问接口
-    auto& uart1 = Board::getUart1();
-    auto& uart3 = Board::getUart3();
     auto& bluetooth = Board::getBluetooth();
-    auto& can = Board::getCan();
     
 	if(!bluetooth.autoBaudScan())
 	{
 	Error_Handler();
 	}
-		
-    while (1) {
 	
-	uart1.send(c,sizeof(c));
+    while (1) {
+	//发送心跳包
+	MAVLink::SendHeartbeat();
+		
+	
+	
         osDelay(100);
     }
 }

@@ -30,7 +30,7 @@ FDCAN_HandleTypeDef hfdcan1;
 
 // 每个单例都提供静态访问接口
 
-// 1. QMC5883P 磁力计
+//QMC5883P 磁力计
 class QMC5883PWrapper {
 public:
     static QMC5883P& getInstance() {
@@ -45,7 +45,7 @@ private:
     QMC5883PWrapper() = default;
 };
 
-// 2. UART3驱动
+//UART3驱动
 class Uart3DriverWrapper {
 public:
     static Uart3Driver& getInstance() {
@@ -60,7 +60,7 @@ private:
     Uart3DriverWrapper() = default;
 };
 
-// 3. UART1驱动
+//UART1驱动
 class Uart1DriverWrapper {
 public:
     static Uart1Driver& getInstance() {
@@ -75,7 +75,7 @@ private:
     Uart1DriverWrapper() = default;
 };
 
-// 4. LED PWM驱动
+//LED PWM驱动
 class LedPwmWrapper {
 public:
     static LedPwm& getInstance() {
@@ -90,7 +90,7 @@ private:
     LedPwmWrapper() = default;
 };
 
-// 5. BMI088 IMU驱动
+//BMI088 IMU驱动
 class Bmi088Wrapper {
 public:
     static Bmi088& getInstance() {
@@ -107,7 +107,7 @@ private:
     Bmi088Wrapper() = default;
 };
 
-// 6. CAN驱动
+//CAN驱动
 class CanDriverWrapper {
 public:
     static CanDriver& getInstance() {
@@ -122,7 +122,7 @@ private:
     CanDriverWrapper() = default;
 };
 
-// 7. OLED设备
+//OLED设备
 class OledDevWrapper {
 public:
     static oled_dev_t& getInstance() {
@@ -143,16 +143,16 @@ private:
     OledDevWrapper() = default;
 };
 
-// 8. 按键对象（全局）
+//按键对象（全局）
 Key key1(KEY1_Port, KEY1_PIN, Key::ActiveLevel::High, 2000, 20);
 Key key2(KEY2_Port, KEY2_PIN, Key::ActiveLevel::High, 2000, 20);
 Key key3(KEY3_Port, KEY3_PIN, Key::ActiveLevel::High, 2000, 20);
 
-// 9. 蓝牙驱动（依赖UART1）
+//蓝牙驱动
 class BluetoothDriverWrapper {
 public:
     static BluetoothDriver& getInstance() {
-        // 关键修改：调用函数获取UART1引用
+        // 调用函数获取UART1引用
         Uart1Driver& uart1 = Uart1DriverWrapper::getInstance();
         static BluetoothDriver instance(&uart1);  // 如果构造函数接受指针
         // static BluetoothDriver instance(uart1);  // 如果构造函数接受引用
@@ -174,7 +174,7 @@ public:
         
         // 按依赖顺序初始化
         
-        // 1. 初始化UART驱动
+        // 初始化UART驱动
         if (!Uart3DriverWrapper::getInstance().init()) {
             printf("UART3 init failed!\r\n");
             success = false;
@@ -185,29 +185,29 @@ public:
             success = false;
         }
         
-        // 2. 初始化LED PWM
+        //初始化LED PWM
         if (!LedPwmWrapper::getInstance().init()) {
             printf("LED PWM init failed!\r\n");
             success = false;
         }
         
-        // 3. 初始化蓝牙
+        //初始化蓝牙
         if (!BluetoothDriverWrapper::getInstance().init()) {
             printf("Bluetooth init failed!\r\n");
             success = false;
         }
         
-        // 4. 初始化OLED硬件
+        //初始化OLED硬件
         OLED_Hw_Init(&OledDevWrapper::getInstance());
         OLED_Init(&OledDevWrapper::getInstance());
         
-        // 5. 初始化IMU
+        //初始化IMU
         if (Bmi088Wrapper::getInstance().init() != BMI08_OK) {
             printf("IMU init failed!\r\n");
             success = false;
         }
         
-        // 6. 初始化磁力计
+        //初始化磁力计
         if (!QMC5883PWrapper::getInstance().init()) {
             printf("QMC5883P init failed!\r\n");
             success = false;
@@ -241,7 +241,7 @@ namespace Board {
     oled_dev_t& getOled() { return OledDevWrapper::getInstance(); }
 	
     BluetoothDriver& getBluetooth() { return BluetoothDriverWrapper::getInstance(); }
-    
+   
     // 获取按键
     Key& getKey1() { return key1; }
     Key& getKey2() { return key2; }
