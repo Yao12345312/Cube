@@ -11,17 +11,96 @@ namespace {
 	//配置发送缓冲区
 	static uint8_t mav_tx_buf[MAVLINK_TX_BUF_LEN];
 	
-	volatile bool mavlink_connected=false;
+	static volatile bool mavlink_connected = false;
+	
+	 // MAVLink解析器状态
+    static mavlink_status_t mav_status;
+    static mavlink_message_t mav_msg;
+    
+    // MAVLink状态信息
+    static struct {
+        uint32_t last_hb_time;      // 最后收到心跳的时间
+        uint8_t link_active;        // 链路是否激活 (0:断开, 1:连接)
+    } mav_status_info = {
+        .last_hb_time = 0,
+        .link_active = 0
+    };
+    
+    // 互斥锁保护状态变量
+    static osMutexId_t mav_status_mutex = NULL;
+	
 }
 
 
 namespace MAVLink {
+	
+	void Init(void) {
+        // 创建互斥锁
+        mav_status_mutex = osMutexNew(NULL);
+        if (mav_status_mutex == NULL) {
+            printf("MAVLink: Failed to create mutex\r\n");
+        } else {
+            printf("MAVLink: Initialized successfully\r\n");
+        }
+        
+        // 初始化MAVLink解析器状态
+        memset(&mav_status, 0, sizeof(mav_status));
+        memset(&mav_msg, 0, sizeof(mav_msg));
+        
+        // 初始化状态信息
+        mav_status_info.last_hb_time = osKernelGetTickCount();
+        mav_status_info.link_active = 0;
+        mavlink_connected = false;
+    }
+	
 	
 	void set_mavlink_connect_status(bool status){ mavlink_connected=status; }
 	
 	bool get_mavlink_connect_status(void){return mavlink_connected;}
 	
 	
+	void ParseData(const uint8_t* data, uint16_t len) {
+        if (data == NULL || len == 0) {return;}
+    
+        // 逐字节喂给MAVLink解析器
+        for (uint16_t i = 0; i < len; i++) {
+            if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &mav_msg, &mav_status) == MAVLINK_FRAMING_OK) {
+                // 解析成功，根据消息ID处理
+                switch (mav_msg.msgid) {
+                    case MAVLINK_MSG_ID_HEARTBEAT: {
+                        // 解码心跳消息
+                        mavlink_heartbeat_t hb;
+                        mavlink_msg_heartbeat_decode(&mav_msg, &hb);
+                        
+                        // 使用互斥锁保护状态更新
+                        if (mav_status_mutex != NULL) {
+                            osMutexAcquire(mav_status_mutex, osWaitForever);
+                        }
+                        
+                        mav_status_info.last_hb_time = osKernelGetTickCount();
+                        
+                        if (mav_status_info.link_active != 1) {
+                            mav_status_info.link_active = 1;
+                            set_mavlink_connect_status(true);
+                            printf("MAVLink: Heartbeat received from system %d, comp %d\r\n", 
+                                   mav_msg.sysid, mav_msg.compid);
+                        }
+                        
+                        if (mav_status_mutex != NULL) {
+                            osMutexRelease(mav_status_mutex);
+                        }
+                        break;
+                    }
+                    
+                    default:
+                        // 其他消息可以忽略或根据需要添加处理
+                        break;
+                }
+            }
+        }
+    }
+
+
 	void SendHeartbeat(void)
 	{	
 	//获取串口实例

@@ -15,10 +15,13 @@ extern "C" {
 
 namespace MAVLink {
 	
+	void Init(void);
+		
 	void SendHeartbeat(void);
 	
 	bool get_mavlink_connect_status(void);
 	
 	void set_mavlink_connect_status(bool status);
-
+	
+	void ParseData(const uint8_t* data, uint16_t len);
 }
