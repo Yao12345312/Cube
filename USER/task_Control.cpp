@@ -9,23 +9,22 @@ osThreadId_t controlTaskHandle = NULL;
 // 定义任务属性
 const osThreadAttr_t controlTask_attributes = {
     .name = "ControlTask",
-    .stack_size = 3072,      // 控制任务栈大小
+    .stack_size = 4*1024,      // 控制任务栈大小
     .priority = (osPriority_t) osPriorityHigh,  // 控制任务优先级较高
 };
-
-// 姿态解算对象（如果需要在控制任务中使用）
-// 注意：这里可以定义为静态对象，或者使用全局对象
-static MahonyAHRS ahrs(250.0f, 2.0f, 0.001f);
 
 // 控制任务入口函数
 void StartControlTask(void *argument)
 {
     // 等待系统稳定
     osDelay(100);
-    
+
     // 打印启动信息
     printf("Control Task Started!\r\n");
-    
+	
+	//AHRS初始化
+	static MahonyAHRS ahrs(250.0f, 2.0f, 0.001f);
+	
     // 获取硬件访问接口
     auto& imu = Board::getImu();
     auto& mag = Board::getQMC5883P();
@@ -34,13 +33,18 @@ void StartControlTask(void *argument)
     auto& key2 = Board::getKey2();
     auto& key3 = Board::getKey3();
     
+	auto& oled=Board::getOled();
+	
+	//开启OLED显示
+	OLED_Display_On(&oled);
+	
+
     // 传感器数据变量
     float ax, ay, az;
     float gx, gy, gz;
     QMC5883P::MagData magData;
-    float roll, pitch, yaw;
-    
-
+    float roll, pitch, yaw;	
+	
     while (1) {
         // 控制任务主循环
 
@@ -63,16 +67,24 @@ void StartControlTask(void *argument)
             (float)magData.z
         );
         
-        ahrs.getEuler(roll, pitch, yaw);
-        
-		//printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
+        ahrs.getEuler(roll,pitch,yaw);
+		printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
+		
+		OLED_ShowFloat(&oled,0,0,roll,4);
+		OLED_ShowFloat(&oled,1,0,pitch,4);	
+		OLED_ShowFloat(&oled,2,0,yaw,4);
+			
         //按键检测
         key1.update();
         Key::Event event = key1.getEvent();
         if (event == Key::Event::ShortPress) {
-            // 处理按键短按
+        // 测试按键短按
             led.setRGB(0, 100, 0);
         }
+		else if(event == Key::Event::LongPress){
+		// 测试按键长按
+            led.setRGB(0, 0, 0);
+		}
         
         // 200HZ
         osDelay(5);

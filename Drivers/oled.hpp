@@ -1,5 +1,4 @@
-#ifndef __OLED_H
-#define __OLED_H
+#pragma once
 
 #include "stm32h7xx_hal.h"
 #include "cmsis_os2.h"
@@ -52,6 +51,4 @@ void OLED_ShowHex(oled_desc_t oled, uint8_t x, uint8_t y, uint32_t num);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

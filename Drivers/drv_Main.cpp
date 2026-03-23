@@ -33,7 +33,8 @@ void init_drv_Main(void)
   MX_TIM2_Init();
 	
   MX_FDCAN1_Init();
-	
+  //等待各模块稳定
+  osDelay(3000);
   //驱动对象初始化
   if (!Board::init()) {
         Error_Handler();

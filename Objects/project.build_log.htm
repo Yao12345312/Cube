@@ -27,41 +27,11 @@ Project File Date:  03/22/2026
 <h2>Output:</h2>
 *** Using Compiler 'V6.10.1', folder: 'D:\keil 51\ARM\ARMCLANG\Bin'
 Build target 'Target 1'
-Drivers/uart1Driver.cpp(142): warning: while loop has empty body [-Wempty-body]
-        while (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_TC) == RESET);
-                                                                   ^
-Drivers/uart1Driver.cpp(142): note: put the semicolon on a separate line to silence this warning
-1 warning generated.
-compiling uart1Driver.cpp...
-USER/task_Communication.cpp(2): warning: In file included from...
-./Middleware/MAVlink\MAVLink_bridge.hpp(7): warning: In file included from...
-./Middleware/MAVlink/common\mavlink.h(32): warning: In file included from...
-./Middleware/MAVlink/common/common.h(29): warning: In file included from...
-./Middleware/MAVlink/common/../protocol.h(89): warning: In file included from...
-./Middleware/MAVlink/mavlink_helpers.h(86): warning: taking address of packed member 'checksum' of class or structure '__mavlink_message' may result in an unaligned pointer value [-Waddress-of-packed-member]
-        crc_accumulate_buffer(&msg->checksum, _MAV_PAYLOAD(msg), msg->len);
-                               ^~~~~~~~~~~~~
-./Middleware/MAVlink/mavlink_helpers.h(88): warning: taking address of packed member 'checksum' of class or structure '__mavlink_message' may result in an unaligned pointer value [-Waddress-of-packed-member]
-        crc_accumulate(crc_extra, &msg->checksum);
-                                   ^~~~~~~~~~~~~
-./Middleware/MAVlink/mavlink_helpers.h(127): warning: taking address of packed member 'checksum' of class or structure '__mavlink_message' may result in an unaligned pointer value [-Waddress-of-packed-member]
-        crc_accumulate_buffer(&msg->checksum, _MAV_PAYLOAD(msg), msg->len);
-                               ^~~~~~~~~~~~~
-./Middleware/MAVlink/mavlink_helpers.h(129): warning: taking address of packed member 'checksum' of class or structure '__mavlink_message' may result in an unaligned pointer value [-Waddress-of-packed-member]
-        crc_accumulate(crc_extra, &msg->checksum);
-                                   ^~~~~~~~~~~~~
-./Middleware/MAVlink/mavlink_helpers.h(241): warning: taking address of packed member 'checksum' of class or structure '__mavlink_message' may result in an unaligned pointer value [-Waddress-of-packed-member]
-        crc_init(&msg->checksum);
-                  ^~~~~~~~~~~~~
-./Middleware/MAVlink/mavlink_helpers.h(246): warning: taking address of packed member 'checksum' of class or structure '__mavlink_message' may result in an unaligned pointer value [-Waddress-of-packed-member]
-        crc_accumulate(c, &msg->checksum);
-                           ^~~~~~~~~~~~~
-6 warnings generated.
-compiling task_Communication.cpp...
+compiling MahonyAHRS.cpp...
 linking...
-Program Size: Code=104792 RO-data=6196 RW-data=60 ZI-data=25300  
+Program Size: Code=108732 RO-data=6400 RW-data=60 ZI-data=31964  
 FromELF: creating hex file...
-".\Objects\project.axf" - 0 Error(s), 7 Warning(s).
+".\Objects\project.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
 

@@ -70,8 +70,8 @@ void QMC5883P::convertMagFrame(MagData &data)
     int16_t mx_tmp = data.x;
     int16_t my_tmp = data.y;
 
-    data.x = -my_tmp;
-    data.y =  mx_tmp;
+    data.x = my_tmp;
+    data.y = -mx_tmp;
 }
 
 

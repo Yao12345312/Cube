@@ -10,7 +10,7 @@ namespace {
     static uint8_t mav_compid = 1;
 	//配置发送缓冲区
 	static uint8_t mav_tx_buf[MAVLINK_TX_BUF_LEN];
-	
+	//volatile修饰防止编译优化，确保每次读取真实状态
 	static volatile bool mavlink_connected = false;
 	
 	 // MAVLink解析器状态
@@ -53,12 +53,12 @@ namespace MAVLink {
         mavlink_connected = false;
     }
 	
-	
+	//设置mavlink连接状态
 	void set_mavlink_connect_status(bool status){ mavlink_connected=status; }
-	
+	//获取mavlink连接状态
 	bool get_mavlink_connect_status(void){return mavlink_connected;}
 	
-	
+	//MAVlink协议解析器
 	void ParseData(const uint8_t* data, uint16_t len) {
         if (data == NULL || len == 0) {return;}
     
@@ -67,6 +67,7 @@ namespace MAVLink {
             if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &mav_msg, &mav_status) == MAVLINK_FRAMING_OK) {
                 // 解析成功，根据消息ID处理
                 switch (mav_msg.msgid) {
+					//解析地面站心跳包
                     case MAVLINK_MSG_ID_HEARTBEAT: {
                         // 解码心跳消息
                         mavlink_heartbeat_t hb;
@@ -92,6 +93,7 @@ namespace MAVLink {
                         break;
                     }
                     
+				   
                     default:
                         // 其他消息可以忽略或根据需要添加处理
                         break;

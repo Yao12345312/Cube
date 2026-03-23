@@ -57,7 +57,7 @@
 #endif /* CMSIS_device_header */
 
 #define configENABLE_FPU                         1
-#define configUSE_TASK_FPU_SUPPORT 2
+#define configUSE_TASK_FPU_SUPPORT               2
 
 #define configENABLE_MPU                         0
 
@@ -69,8 +69,8 @@
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )
-#define configMINIMAL_STACK_SIZE                 ((uint16_t)128)
-#define configTOTAL_HEAP_SIZE                    ((size_t)15360)
+#define configMINIMAL_STACK_SIZE                 ((uint16_t)512)
+#define configTOTAL_HEAP_SIZE                    ((size_t)20*1024)
 #define configMAX_TASK_NAME_LEN                  ( 16 )
 #define configUSE_TRACE_FACILITY         		 1
 #define configUSE_16_BIT_TICKS                   0

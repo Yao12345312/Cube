@@ -34,7 +34,16 @@ void MahonyAHRS::update(float gx, float gy, float gz,
     float vx, vy, vz, wx, wy, wz;
     float ex, ey, ez;
 	
-	const float magWeight = 0.005f;  // 磁力计降低到0.5%的权重
+	float gyro_norm = sqrtf(gx*gx + gy*gy + gz*gz);
+	//动态磁力计权重
+	float magWeight_dynamic;
+
+	if (gyro_norm > 0.7f)       // 快速旋转
+		magWeight_dynamic = 0.0f;
+	else if (gyro_norm > 0.3f)  // 中速
+		magWeight_dynamic = 0.001f;
+	else                        // 静止/慢速
+		magWeight_dynamic = 0.003f;
     // 归一化加速度
     recipNorm = invSqrt(ax*ax + ay*ay + az*az);
     ax *= recipNorm;
@@ -65,10 +74,12 @@ void MahonyAHRS::update(float gx, float gy, float gz,
 	wz = 2.0f*bx*(q0*q2 + q1*q3) + 2.0f*bz*(0.5f - q1*q1 - q2*q2);
 
 	// 误差 (加速度 + 磁力计)
-	ex = (ay*vz - az*vy)+  magWeight*(my*wz - mz*wy);
-	ey = (az*vx - ax*vz)+  magWeight*(mz*wx - mx*wz);
-	ez = (ax*vy - ay*vx)+  magWeight*(mx*wy - my*wx);
-	
+	ex = (ay*vz - az*vy)  + magWeight_dynamic*(my*wz - mz*wy);
+	ey = (az*vx - ax*vz)  + magWeight_dynamic*(mz*wx - mx*wz);
+	ez = (ax*vy - ay*vx ) + magWeight_dynamic*(mx*wy - my*wx);
+	//z轴积分限幅
+	if (fabsf(ez) > 0.2f)
+    ez = 0;
 	//if(fabsf(ez)>0.2) ez = (ax*vy - ay*vx); //误差较大时，忽略磁力计
 		
     // 积分项

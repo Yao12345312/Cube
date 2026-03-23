@@ -1,7 +1,5 @@
-extern "C" {
 #include "oled.hpp"
 #include "oled_font.hpp"
-}
 #include <cstdio>
 #include <cstring>
 

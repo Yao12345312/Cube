@@ -172,7 +172,9 @@
   Middleware/MAVlink/standard/./mavlink_msg_autopilot_version.h \
   Middleware/MAVlink/standard/../minimal/minimal.h \
   Middleware/MAVlink/standard/../minimal/./mavlink_msg_heartbeat.h \
-  BSP\board.hpp HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal.h \
+  Math\MahonyAHRS.hpp \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cmath BSP\board.hpp \
+  HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal.h \
   USER\stm32h7xx_hal_conf.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_rcc.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_def.h CMSIS\stm32h7xx.h \

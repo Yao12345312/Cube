@@ -1,5 +1,6 @@
 #include "task_Communication.hpp"
 #include "MAVLink_bridge.hpp"
+#include "MahonyAHRS.hpp"
 #include "board.hpp"
 #include <string>
 #include <cstdio>
@@ -10,7 +11,7 @@ osThreadId_t communicationTaskHandle = NULL;
 // 定义任务属性
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
-    .stack_size = 2048,      // 通信任务栈大小，根据实际需求调整
+    .stack_size = 2048,      // 通信任务栈大小
     .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -18,8 +19,6 @@ const osThreadAttr_t communicationTask_attributes = {
 void StartCommunicationTask(void *argument)
 {
 	MAVLink::Init();
-    // 等待蓝牙模块稳定
-    osDelay(2500);
     
     // 打印启动信息
     printf("Communication Task Started!\r\n");
@@ -28,7 +27,7 @@ void StartCommunicationTask(void *argument)
     auto& bluetooth = Board::getBluetooth();
     auto& uart = Board::getUart1();
 	auto& led =Board::getLedPwm();
-	
+
 	if(!bluetooth.autoBaudScan())
 	{
 	Error_Handler();
@@ -41,8 +40,7 @@ void StartCommunicationTask(void *argument)
 	led.setRGBBlink(100,0,0,1);
 	
     while (1) {
-		
-        
+		    
         //处理接收到的MAVLink数据
     if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
             MAVLink::ParseData(frame.data, frame.len);

@@ -64,7 +64,7 @@ int main(void)
   osKernelStart();
 
   while(1){} 
-
+	
 }
 //驱动初始化任务
 void DriverInitTask(void * argument)

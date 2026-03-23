@@ -36,7 +36,9 @@ public:
      * @return UART_HandleTypeDef* 
      */
     UART_HandleTypeDef* getHandle() { return m_huart; }
-
+	
+	osMutexId_t getMutex(){return m_mutex;}
+	
 private:
     UART_HandleTypeDef* m_huart;      // UART句柄
     bool m_isInitialized;              // 初始化标志
