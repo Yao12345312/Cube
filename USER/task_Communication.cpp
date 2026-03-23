@@ -28,6 +28,7 @@ void StartCommunicationTask(void *argument)
     auto& bluetooth = Board::getBluetooth();
     auto& uart = Board::getUart1();
 	auto& led =Board::getLedPwm();
+	
 	if(!bluetooth.autoBaudScan())
 	{
 	Error_Handler();
@@ -36,7 +37,8 @@ void StartCommunicationTask(void *argument)
 	MavRxFrame_t frame;
     uint32_t last_heartbeat = 0;
     uint32_t now;
-	led.setRGBBlink(100,0,0,5);
+	//MAVLink未连接状态，设置红灯1HZ闪烁
+	led.setRGBBlink(100,0,0,1);
 	
     while (1) {
 		
@@ -45,8 +47,8 @@ void StartCommunicationTask(void *argument)
     if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
             MAVLink::ParseData(frame.data, frame.len);
         }
-	
-	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,5);}
+	//MAVLink通信成功，设置绿灯1HZ闪烁
+	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
 		
 	//发送心跳包
 	MAVLink::SendHeartbeat();

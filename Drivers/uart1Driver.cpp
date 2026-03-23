@@ -154,28 +154,31 @@ void Uart1Driver::setAtMode(bool enable)
 /* ================= IDLE中断核心 ================= */
 
 void Uart1Driver::irqHandler()
-{	//判断串口进入空闲中断
+{	//判断串口是否进入空闲中断
     if (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_IDLE))
     {	//清空中断标志位
         __HAL_UART_CLEAR_IDLEFLAG(m_huart);
-		
+		//计算已接收字节数=BUF_SIZE - 当前DMA剩余计数，获得新数据位置
         uint16_t dmaRemain = __HAL_DMA_GET_COUNTER(m_huart->hdmarx);
         uint16_t newPos = UART1_DMA_RX_BUF_SIZE - dmaRemain;
         uint16_t start = m_lastPos;
-
+		//如果没有数据则返回
         if (newPos == start) return;
 
         /* ================= AT模式 ================= */
         if (isAtMode())
-        {
+        {	
+			//未发生环形环绕，数据连续
             if (newPos > start)
-            {
+            {	
+				//按顺序逐个字符放入消息队列
                 for (uint16_t i = start; i < newPos; i++)
                 {
                     uint8_t ch = m_dmaBuf[i];
-                    osMessageQueuePut(m_atQueue, &ch, 0, 0); // ISR必须timeout=0
+                    osMessageQueuePut(m_atQueue, &ch, 0, 0); // ISR必须timeout=0，确保在中断中不会阻塞
                 }
             }
+			//发生环形环绕，先处理缓冲区末尾[start,UART1_DMA_RX_BUF_SIZE],再处理[0,newPos]
             else
             {
                 for (uint16_t i = start; i < UART1_DMA_RX_BUF_SIZE; i++)
@@ -195,17 +198,20 @@ void Uart1Driver::irqHandler()
         }
 
         /* ================= MAVLink模式 ================= */
+		//MAVLink属于二进制协议需要以帧为单位处理
         MavRxFrame_t frame;
         frame.len = 0;
-
+		//未发生环绕
         if (newPos > start)
-        {
+        {	
+			//缓冲区保护：如果总数居超过MAV_RX_BUF_LEN，只取前MAV_RX_BUF_LEN个字节
             uint16_t len = newPos - start;
             if (len > MAV_RX_BUF_LEN) len = MAV_RX_BUF_LEN;
-
+			//数据从DMA缓冲区存入frame
             memcpy(frame.data, &m_dmaBuf[start], len);
             frame.len = len;
         }
+		//发生环绕，同样先处理尾部再处理头部
         else
         {
             uint16_t part1 = UART1_DMA_RX_BUF_SIZE - start;
@@ -225,7 +231,7 @@ void Uart1Driver::irqHandler()
         }
 
         m_lastPos = newPos;
-
+		//数据帧完整送入队列
         if (frame.len > 0)
         {
             osMessageQueuePut(m_mavQueue, &frame, 0, 0); // ISR必须timeout=0

@@ -78,7 +78,7 @@ namespace MAVLink {
                         }
                         
                         mav_status_info.last_hb_time = osKernelGetTickCount();
-                        
+                        //如果之前不在连接状态，修改连接状态为1（已连接）
                         if (mav_status_info.link_active != 1) {
                             mav_status_info.link_active = 1;
                             set_mavlink_connect_status(true);
