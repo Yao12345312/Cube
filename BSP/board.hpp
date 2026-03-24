@@ -69,15 +69,17 @@ void Error_Handler(void);
 //C++接口
 #ifdef __cplusplus
 
-#include "oled.hpp" 
-#include "QMC5883P.hpp"
+#include "key.hpp"
+#include "TFCard.hpp"
 #include "uart1Driver.hpp"
 #include "uart3Driver.hpp"
 #include "led.hpp"
-#include "BMI088.hpp"
+#include "oled.hpp"
 #include "can.hpp"
 #include "KT6368A.hpp"
-#include "key.hpp"
+#include "BMI088.hpp"
+#include "QMC5883P.hpp"
+#include "INA226.hpp"
 
 
 /**
@@ -106,6 +108,12 @@ namespace Board {
      */
     QMC5883P& getQMC5883P();
     
+	 /**
+     * @brief 获取INA226磁力计实例
+     * @return INA226对象的引用
+     */
+	
+	INA226& getINA226();
     /**
      * @brief 获取UART3驱动实例
      * @return Uart3Driver对象的引用

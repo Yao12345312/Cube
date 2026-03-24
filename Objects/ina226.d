@@ -1,4 +1,4 @@
-./objects/drv_main.o: Drivers/drv_Main.cpp Drivers/drv_Main.hpp \
+./objects/ina226.o: Drivers/INA226.cpp Drivers/INA226.hpp \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal.h \
   USER\stm32h7xx_hal_conf.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_rcc.h \
@@ -53,32 +53,4 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_uart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
-  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  USER\task_Control.hpp Middleware/RTOS/include\FreeRTOS.h \
-  Middleware/RTOS\FreeRTOSConfig.h Middleware/RTOS/include/projdefs.h \
-  Middleware/RTOS/include/portable.h \
-  Middleware/RTOS/include/deprecated_definitions.h \
-  Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/RTOS/include/mpu_wrappers.h Middleware/RTOS/include\task.h \
-  Middleware/RTOS/include/list.h \
-  Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h USER\task_Communication.hpp \
-  Drivers/uart3Driver.hpp \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h BSP\board.hpp \
-  Drivers\key.hpp Middleware/RTOS/include\semphr.h \
-  Middleware/RTOS/include/queue.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint \
-  Drivers\TFCard.hpp LittleFS\lfs.h LittleFS/lfs_util.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\string.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\inttypes.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\inttypes.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdlib.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdlib.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\assert.h \
-  Drivers\uart1Driver.hpp Drivers\led.hpp Drivers\oled.hpp \
-  Drivers\can.hpp Drivers\KT6368A.hpp Drivers\BMI088.hpp \
-  Drivers/bmi08x.h Drivers/bmi08.h Drivers/bmi08_defs.h \
-  Drivers\QMC5883P.hpp Drivers\INA226.hpp
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h

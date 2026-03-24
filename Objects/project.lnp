@@ -19,6 +19,7 @@
 ".\objects\oled.o"
 ".\objects\can.o"
 ".\objects\kt6368a.o"
+".\objects\ina226.o"
 ".\objects\board.o"
 ".\objects\mahonyahrs.o"
 ".\objects\lfs.o"

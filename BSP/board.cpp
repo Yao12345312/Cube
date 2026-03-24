@@ -1,20 +1,11 @@
 #include "board.hpp"
-#include "key.hpp"
-#include "TFCard.hpp"
-#include "uart1Driver.hpp"
-#include "uart3Driver.hpp"
-#include "led.hpp"
-#include "oled.hpp"
-#include "can.hpp"
-#include "KT6368A.hpp"
-#include "BMI088.hpp"
-#include "QMC5883P.hpp"
 
 extern "C" {
     void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim);
 }
 
 // ==================== HAL句柄定义（全局，由CubeMX生成） ==================== 
+I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
@@ -43,6 +34,21 @@ public:
     
 private:
     QMC5883PWrapper() = default;
+};
+
+//INA226电流功率监控芯片
+class INA226Wrapper {
+public:
+    static INA226& getInstance() {
+        static INA226 instance(&hi2c1);
+        return instance;
+    }
+    
+    INA226Wrapper(const INA226Wrapper&) = delete;
+    INA226Wrapper& operator=(const INA226Wrapper&) = delete;
+    
+private:
+    INA226Wrapper() = default;
 };
 
 //UART3驱动
@@ -165,7 +171,7 @@ public:
 private:
     BluetoothDriverWrapper() = default;
 };
-
+//=========================================================================
 //初始化管理器类
 class BoardInitializer {
 public:
@@ -213,6 +219,9 @@ public:
             success = false;
         }
         
+		//初始化INA226
+		INA226Wrapper::getInstance().Init();
+        	
         // 7. 初始化CAN（如果需要）
         // CanDriverWrapper::getInstance().init();
         
@@ -228,6 +237,8 @@ namespace Board {
     // 获取模块的引用
     QMC5883P& getQMC5883P() { return QMC5883PWrapper::getInstance(); }
 	
+	INA226& getINA226() {return INA226Wrapper::getInstance();}
+	
     Uart3Driver& getUart3() { return Uart3DriverWrapper::getInstance(); }
 	
     Uart1Driver& getUart1() { return Uart1DriverWrapper::getInstance(); }
@@ -241,7 +252,7 @@ namespace Board {
     oled_dev_t& getOled() { return OledDevWrapper::getInstance(); }
 	
     BluetoothDriver& getBluetooth() { return BluetoothDriverWrapper::getInstance(); }
-   
+	
     // 获取按键
     Key& getKey1() { return key1; }
     Key& getKey2() { return key2; }
@@ -312,6 +323,53 @@ void MX_SDMMC1_SD_Init(void)
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
   /* USER CODE END SDMMC1_Init 2 */
+
+}
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x00909BEB;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
 
 }
 

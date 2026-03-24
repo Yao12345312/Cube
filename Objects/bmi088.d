@@ -60,15 +60,23 @@
   Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\string.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h BSP\board.hpp \
-  Drivers\oled.hpp Drivers\QMC5883P.hpp Drivers\uart1Driver.hpp \
-  Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
-  Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \
+  Drivers\key.hpp Middleware/RTOS/include\FreeRTOS.h \
+  Middleware/RTOS\FreeRTOSConfig.h Middleware/RTOS/include/projdefs.h \
+  Middleware/RTOS/include/portable.h \
   Middleware/RTOS/include/deprecated_definitions.h \
   Middleware/RTOS/portable/ARM_CM7/r0p1\portmacro.h \
-  Middleware/RTOS/include/mpu_wrappers.h Middleware/RTOS/include\queue.h \
+  Middleware/RTOS/include/mpu_wrappers.h \
+  Middleware/RTOS/include\semphr.h Middleware/RTOS/include/queue.h \
   Middleware/RTOS/include/task.h Middleware/RTOS/include/list.h \
-  Middleware/RTOS/include\semphr.h Drivers\uart3Driver.hpp \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint \
+  Drivers\TFCard.hpp LittleFS\lfs.h LittleFS/lfs_util.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\inttypes.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\inttypes.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdlib.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdlib.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\assert.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h Drivers\led.hpp \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint Drivers\can.hpp \
-  Drivers\KT6368A.hpp Drivers\key.hpp
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h Drivers\uart1Driver.hpp \
+  Drivers\uart3Driver.hpp Drivers\led.hpp Drivers\oled.hpp \
+  Drivers\can.hpp Drivers\KT6368A.hpp Drivers\QMC5883P.hpp \
+  Drivers\INA226.hpp

@@ -4,7 +4,7 @@
 #include "board.hpp"
 #include <string>
 #include <cstdio>
-
+extern I2C_HandleTypeDef hi2c1;
 // 定义任务句柄
 osThreadId_t communicationTaskHandle = NULL;
 
@@ -27,20 +27,25 @@ void StartCommunicationTask(void *argument)
     auto& bluetooth = Board::getBluetooth();
     auto& uart = Board::getUart1();
 	auto& led =Board::getLedPwm();
-
+	auto& ina226=Board::getINA226();
+	auto& oled=Board::getOled();
 	if(!bluetooth.autoBaudScan())
 	{
 	Error_Handler();
 	}
-	
+	//MAVLink封装帧
 	MavRxFrame_t frame;
     uint32_t last_heartbeat = 0;
     uint32_t now;
+	
+	float bat_vel;
 	//MAVLink未连接状态，设置红灯1HZ闪烁
 	led.setRGBBlink(100,0,0,1);
 	
+
     while (1) {
-		    
+	bat_vel=ina226.INA226_ReadBusVoltage();
+	OLED_ShowFloat(&oled,3,0,bat_vel,4);	
         //处理接收到的MAVLink数据
     if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
             MAVLink::ParseData(frame.data, frame.len);
