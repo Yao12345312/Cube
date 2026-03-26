@@ -62,8 +62,10 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
-  Drivers\key.hpp Middleware/RTOS/include\semphr.h \
-  Middleware/RTOS/include/queue.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_pcd.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h Drivers\key.hpp \
+  Middleware/RTOS/include\semphr.h Middleware/RTOS/include/queue.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdint \
   Drivers\TFCard.hpp LittleFS\lfs.h LittleFS/lfs_util.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
@@ -80,6 +82,14 @@
   Drivers\uart3Driver.hpp Drivers\led.hpp Drivers\oled.hpp \
   Drivers\can.hpp Drivers\KT6368A.hpp Drivers\BMI088.hpp \
   Drivers/bmi08x.h Drivers/bmi08.h Drivers/bmi08_defs.h \
-  Drivers\QMC5883P.hpp Drivers\INA226.hpp Math\MahonyAHRS.hpp \
+  Drivers\SPA06.hpp Drivers\QMC5883P.hpp Drivers\INA226.hpp \
+  Drivers\buzzer.hpp BSP/DebugPort.hpp \
+  Middleware/USBDevice/App\usbd_cdc_if.h \
+  Middleware/USBDevice/Library\usbd_cdc.h \
+  Middleware/USBDevice/Library/usbd_ioreq.h \
+  Middleware/USBDevice/Library/usbd_def.h \
+  Middleware/USBDevice/Target\usbd_conf.h \
+  Middleware/USBDevice/Library/usbd_core.h \
+  Middleware/USBDevice/Library/usbd_ctlreq.h Math\MahonyAHRS.hpp \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cmath \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\cstdio

@@ -54,6 +54,9 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_pcd.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h \
   Drivers/bmi08x.h Drivers/bmi08.h Drivers/bmi08_defs.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdbool.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdbool.h \
@@ -78,5 +81,12 @@
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h Drivers\uart1Driver.hpp \
   Drivers\uart3Driver.hpp Drivers\led.hpp Drivers\oled.hpp \
-  Drivers\can.hpp Drivers\KT6368A.hpp Drivers\QMC5883P.hpp \
-  Drivers\INA226.hpp
+  Drivers\can.hpp Drivers\KT6368A.hpp Drivers\SPA06.hpp \
+  Drivers\QMC5883P.hpp Drivers\INA226.hpp Drivers\buzzer.hpp \
+  BSP/DebugPort.hpp Middleware/USBDevice/App\usbd_cdc_if.h \
+  Middleware/USBDevice/Library\usbd_cdc.h \
+  Middleware/USBDevice/Library/usbd_ioreq.h \
+  Middleware/USBDevice/Library/usbd_def.h \
+  Middleware/USBDevice/Target\usbd_conf.h \
+  Middleware/USBDevice/Library/usbd_core.h \
+  Middleware/USBDevice/Library/usbd_ctlreq.h BSP\SPI_Manager.hpp

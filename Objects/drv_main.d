@@ -54,6 +54,9 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_pcd.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h \
   USER\task_Control.hpp Middleware/RTOS/include\FreeRTOS.h \
   Middleware/RTOS\FreeRTOSConfig.h Middleware/RTOS/include/projdefs.h \
   Middleware/RTOS/include/portable.h \
@@ -81,4 +84,12 @@
   Drivers\uart1Driver.hpp Drivers\led.hpp Drivers\oled.hpp \
   Drivers\can.hpp Drivers\KT6368A.hpp Drivers\BMI088.hpp \
   Drivers/bmi08x.h Drivers/bmi08.h Drivers/bmi08_defs.h \
-  Drivers\QMC5883P.hpp Drivers\INA226.hpp
+  Drivers\SPA06.hpp Drivers\QMC5883P.hpp Drivers\INA226.hpp \
+  Drivers\buzzer.hpp BSP/DebugPort.hpp \
+  Middleware/USBDevice/App\usbd_cdc_if.h \
+  Middleware/USBDevice/Library\usbd_cdc.h \
+  Middleware/USBDevice/Library/usbd_ioreq.h \
+  Middleware/USBDevice/Library/usbd_def.h \
+  Middleware/USBDevice/Target\usbd_conf.h \
+  Middleware/USBDevice/Library/usbd_core.h \
+  Middleware/USBDevice/Library/usbd_ctlreq.h

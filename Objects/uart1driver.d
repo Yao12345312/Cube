@@ -54,6 +54,9 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_pcd.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h \
   Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h \
   Middleware/RTOS/include\FreeRTOS.h Middleware/RTOS\FreeRTOSConfig.h \
   Middleware/RTOS/include/projdefs.h Middleware/RTOS/include/portable.h \

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "board.hpp"
 #include "uart3Driver.hpp"
+#include "SPI_Manager.hpp"
 
 #define BMI08X_READ_WRITE_LEN  64
 
@@ -59,6 +60,9 @@ BMI08_INTF_RET_TYPE Bmi088::spiRead(uint8_t reg_addr,
     // 从intf_ptr获取Bmi088对象指针
     Bmi088 *self = static_cast<Bmi088 *>(intf_ptr);
     
+	//CS拉低引脚前切换模式为mode 0
+	//if (!SPI_SetMode(self->m_hspi,SPI_POLARITY_LOW,SPI_PHASE_1EDGE)) {return -1;}
+	
     uint8_t tx_buf[len + 1];
     uint8_t rx_buf[len + 1];
 
@@ -82,7 +86,10 @@ BMI08_INTF_RET_TYPE Bmi088::spiRead(uint8_t reg_addr,
 
     /* 直接拷贝真实数据*/
     memcpy(reg_data, &rx_buf[1], len);
-
+	
+	//释放SPI
+	//SPI_Unlock();
+	
     return BMI08_INTF_RET_SUCCESS;
 }
 
@@ -95,7 +102,10 @@ BMI08_INTF_RET_TYPE Bmi088::spiWrite(uint8_t reg,
                                      void *intf_ptr)
 {
     Bmi088 *self = static_cast<Bmi088 *>(intf_ptr);
-
+	
+	//CS拉低引脚前切换模式为mode 0
+	//if (!SPI_SetMode(self->m_hspi,SPI_POLARITY_LOW,SPI_PHASE_1EDGE)) {return -1;}
+	
     uint8_t tx = reg & 0x7F;
 
     // 根据当前设备选择片选
@@ -113,7 +123,10 @@ BMI08_INTF_RET_TYPE Bmi088::spiWrite(uint8_t reg,
     } else {
         HAL_GPIO_WritePin(self->m_gyroCsPort, self->m_gyroCsPin, GPIO_PIN_SET);
     }
-
+	
+	//释放SPI
+	//SPI_Unlock();
+	
     return BMI08_OK;
 }
 

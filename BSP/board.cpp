@@ -15,6 +15,7 @@ UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim4;
 FDCAN_HandleTypeDef hfdcan1;
 
 //=======================Meyers Singleton 实现 =====================
@@ -96,6 +97,21 @@ private:
     LedPwmWrapper() = default;
 };
 
+//buzzer驱动
+class BuzzerWrapper {
+public:
+    static Buzzer& getInstance() {
+        static Buzzer instance(&htim4, TIM_CHANNEL_3);
+        return instance;
+    }
+    
+    BuzzerWrapper(const BuzzerWrapper&) = delete;
+    BuzzerWrapper& operator=(const BuzzerWrapper&) = delete;
+    
+private:
+    BuzzerWrapper() = default;
+};
+
 //BMI088 IMU驱动
 class Bmi088Wrapper {
 public:
@@ -111,6 +127,22 @@ public:
     
 private:
     Bmi088Wrapper() = default;
+};
+
+//BARO驱动
+class SPA06Wrapper {
+public:
+    static SPA06& getInstance() {
+        static SPA06 instance(&hspi1, 
+                                BARO_CS_Port,BARO_CS_Pin);
+        return instance;
+    }
+    
+    SPA06Wrapper (const SPA06Wrapper &) = delete;
+    SPA06Wrapper & operator=(const SPA06Wrapper &) = delete;
+    
+private:
+    SPA06Wrapper() = default;
 };
 
 //CAN驱动
@@ -212,6 +244,12 @@ public:
             printf("IMU init failed!\r\n");
             success = false;
         }
+		
+//		//初始化气压计
+//		if(!SPA06Wrapper::getInstance().init()){
+//			printf("BARO init failed!\r\n");
+//            success = false;
+//		}
         
         //初始化磁力计
         if (!QMC5883PWrapper::getInstance().init()) {
@@ -222,6 +260,12 @@ public:
 		//初始化INA226
 		INA226Wrapper::getInstance().Init();
         	
+	    //初始化蜂鸣器
+		BuzzerWrapper::getInstance().init();
+		
+//		//调试端口初始化
+//		DebugPort::init(DebugPort::Type::UART);
+		
         // 7. 初始化CAN（如果需要）
         // CanDriverWrapper::getInstance().init();
         
@@ -245,7 +289,11 @@ namespace Board {
 	
     LedPwm& getLedPwm() { return LedPwmWrapper::getInstance(); }
 	
+	Buzzer& getBuzzer() {return BuzzerWrapper::getInstance();}
+	
     Bmi088& getImu() { return Bmi088Wrapper::getInstance(); }
+	
+	SPA06& getBaro() {return SPA06Wrapper::getInstance();}
 	
     CanDriver& getCan() { return CanDriverWrapper::getInstance(); }
 	
@@ -281,8 +329,9 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
+  //片选引脚初始化先拉高
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
   
   /*Configure GPIO pins : PC4 PC5 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
@@ -290,7 +339,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
+	
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  
   GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -299,7 +354,6 @@ void MX_GPIO_Init(void)
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
-
 void MX_SDMMC1_SD_Init(void)
 {
 
@@ -315,7 +369,7 @@ void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd1.Init.ClockDiv = 0;
+  hsd1.Init.ClockDiv = 200;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
   {
     Error_Handler();
@@ -341,7 +395,7 @@ void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00909BEB;
+  hi2c1.Init.Timing = 0x10C0ECFF;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -384,7 +438,7 @@ void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x00707CBB;
+  hi2c2.Init.Timing = 0x10C0ECFF;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -431,7 +485,7 @@ void MX_SPI1_Init(void)
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;  //SPI mode:0
   hspi1.Init.CLKPhase    = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
@@ -477,7 +531,7 @@ void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -563,6 +617,66 @@ void MX_TIM2_Init(void)
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
 }
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 199;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 999;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+  HAL_TIM_MspPostInit(&htim4);
+
+}
+
 
 void MX_USART1_UART_Init(void)
 {

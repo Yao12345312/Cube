@@ -1,6 +1,6 @@
 #include "uart3Driver.hpp"
 #include <string.h>
-
+#include <DebugPort.hpp>
 // 全局变量定义
 Uart3Driver* g_uart3Driver = nullptr;
 
@@ -97,25 +97,25 @@ int fputc(int ch, FILE* f)
     return ch;
 }
 
-/**
- * @brief STM32CubeIDE (GCC编译器)的重定向函数 
- */
-int __io_putchar(int ch)
-{
-    return fputc(ch, nullptr);
-}
+///**
+// * @brief STM32CubeIDE (GCC编译器)的重定向函数 
+// */
+//int __io_putchar(int ch)
+//{
+//    return fputc(ch, nullptr);
+//}
 
-/**
- * @brief 另一种常见的重定向函数形式（某些编译器使用）
- */
-int _write(int file, char* ptr, int len)
-{
-    if (g_uart3Driver != nullptr && 
-        g_uart3Driver->getHandle() != nullptr) {
-        
-        UART_HandleTypeDef* huart = g_uart3Driver->getHandle();
-        HAL_UART_Transmit(huart, (uint8_t*)ptr, len, HAL_MAX_DELAY);
-    }
-    
-    return len;
-}
+///**
+// * @brief 另一种常见的重定向函数形式（某些编译器使用）
+// */
+//int _write(int file, char* ptr, int len)
+//{
+//    if (g_uart3Driver != nullptr && 
+//        g_uart3Driver->getHandle() != nullptr) {
+//        
+//        UART_HandleTypeDef* huart = g_uart3Driver->getHandle();
+//        HAL_UART_Transmit(huart, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+//    }
+//    
+//    return len;
+//}

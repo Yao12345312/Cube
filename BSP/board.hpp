@@ -10,6 +10,9 @@ extern "C" {
 #define BMI_GCS_Port GPIOC
 #define BMI_GCS_Pin  GPIO_PIN_5
 
+//SPL06引脚定义
+#define BARO_CS_Port GPIOA
+#define BARO_CS_Pin  GPIO_PIN_4
 //按键引脚定义
 #define KEY1_Port GPIOE
 #define KEY1_PIN  GPIO_PIN_3
@@ -78,9 +81,11 @@ void Error_Handler(void);
 #include "can.hpp"
 #include "KT6368A.hpp"
 #include "BMI088.hpp"
+#include "SPA06.hpp"
 #include "QMC5883P.hpp"
 #include "INA226.hpp"
-
+#include "buzzer.hpp"
+#include "DebugPort.hpp"
 
 /**
  * @brief Board命名空间 - 提供所有硬件模块的统一访问接口
@@ -131,13 +136,22 @@ namespace Board {
      * @return LedPwm对象的引用
      */
     LedPwm& getLedPwm();
-    
+    /**
+     * @brief 获取Buzzer驱动实例
+     * @return Buzzer对象的引用
+     */
+	 Buzzer& getBuzzer();
+	 
     /**
      * @brief 获取BMI088 IMU实例
      * @return Bmi088对象的引用
      */
     Bmi088& getImu();
-    
+     /**
+     * @brief 获取SPL06实例
+     * @return SPL06对象的引用
+     */   
+	SPA06& getBaro();
     /**
      * @brief 获取CAN驱动实例
      * @return CanDriver对象的引用

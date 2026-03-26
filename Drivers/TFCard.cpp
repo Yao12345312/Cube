@@ -2,6 +2,7 @@
 #include <cstring>
 #include "cmsis_os2.h"
 
+//SD卡容量
 #define LFS_BLOCK_SIZE    512
 #define LFS_BLOCK_COUNT   (32 * 1024)
 
@@ -82,7 +83,6 @@ lfs_t* LittleFS::handle()
 }
 
 /* ================= block device ================= */
-
 int LittleFS::block_read(const lfs_config* c,
                          lfs_block_t block,
                          lfs_off_t off,
@@ -90,24 +90,25 @@ int LittleFS::block_read(const lfs_config* c,
                          lfs_size_t size)
 {
     auto self = static_cast<LittleFS*>(c->context);
-
+    
     uint32_t sector =
         block * (c->block_size / LFS_BLOCK_SIZE) +
         off   / LFS_BLOCK_SIZE;
-
+    
     uint32_t count = size / LFS_BLOCK_SIZE;
-
-    cache_invalidate(buffer, size);
-
-    if (HAL_SD_ReadBlocks_DMA(self->m_hsd,
-                              (uint8_t*)buffer,
-                              sector,
-                              count) != HAL_OK)
+    
+    // 使用轮询模式，超时时间5000ms
+    HAL_StatusTypeDef status = HAL_SD_ReadBlocks(self->m_hsd,
+                                                  (uint8_t*)buffer,
+                                                  sector,
+                                                  count,
+                                                  5000);
+    if (status != HAL_OK)
+    {
+        printf("SD Read Error: %d\r\n", status);
         return LFS_ERR_IO;
-
-    while (HAL_SD_GetCardState(self->m_hsd) != HAL_SD_CARD_TRANSFER);
-
-    cache_invalidate(buffer, size);
+    }
+    
     return 0;
 }
 
@@ -118,23 +119,24 @@ int LittleFS::block_write(const lfs_config* c,
                           lfs_size_t size)
 {
     auto self = static_cast<LittleFS*>(c->context);
-
+    
     uint32_t sector =
         block * (c->block_size / LFS_BLOCK_SIZE) +
         off   / LFS_BLOCK_SIZE;
-
+    
     uint32_t count = size / LFS_BLOCK_SIZE;
-
-    cache_clean(buffer, size);
-
-    if (HAL_SD_WriteBlocks_DMA(self->m_hsd,
-                               (uint8_t*)buffer,
-                               sector,
-                               count) != HAL_OK)
+    
+    HAL_StatusTypeDef status = HAL_SD_WriteBlocks(self->m_hsd,
+                                                   (uint8_t*)buffer,
+                                                   sector,
+                                                   count,
+                                                   5000);
+    if (status != HAL_OK)
+    {
+        printf("SD Write Error: %d\r\n", status);
         return LFS_ERR_IO;
-
-    while (HAL_SD_GetCardState(self->m_hsd) != HAL_SD_CARD_TRANSFER);
-
+    }
+    
     return 0;
 }
 

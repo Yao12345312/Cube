@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER, STM32H743xx</Define>
               <Undefine></Undefine>
-              <IncludePath>.\CMSIS;.\Drivers;.\Math;.\Middleware;.\USER;.\HALLIB\STM32H7xx_HAL_Driver\Inc;.\BSP;.\Middleware\RTOS\include;.\Middleware\RTOS;.\Middleware\RTOS\portable\ARM_CM7\r0p1;.\Middleware\RTOS\CMSIS_RTOS_V2;.\Middleware\MAVlink;.\Middleware\MAVlink\common;.\Middleware\MAVlink\standard;.\LittleFS;.\u8g2</IncludePath>
+              <IncludePath>.\CMSIS;.\Drivers;.\Math;.\Middleware;.\USER;.\HALLIB\STM32H7xx_HAL_Driver\Inc;.\BSP;.\Middleware\RTOS\include;.\Middleware\RTOS;.\Middleware\RTOS\portable\ARM_CM7\r0p1;.\Middleware\RTOS\CMSIS_RTOS_V2;.\Middleware\MAVlink;.\Middleware\MAVlink\common;.\Middleware\MAVlink\standard;.\LittleFS;.\u8g2;.\Middleware\USBDevice\App;.\Middleware\USBDevice\Target;.\Middleware\USBDevice\Library</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -444,6 +444,11 @@
               <FilePath>.\Drivers\bmi08a.c</FilePath>
             </File>
             <File>
+              <FileName>SPA06.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Drivers\SPA06.cpp</FilePath>
+            </File>
+            <File>
               <FileName>QMC5883P.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\Drivers\QMC5883P.cpp</FilePath>
@@ -493,6 +498,11 @@
               <FileType>8</FileType>
               <FilePath>.\Drivers\INA226.cpp</FilePath>
             </File>
+            <File>
+              <FileName>buzzer.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Drivers\buzzer.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -502,6 +512,11 @@
               <FileName>board.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\BSP\board.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>DebugPort.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\BSP\DebugPort.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -692,6 +707,21 @@
               <FileName>stm32h7xx_hal_fdcan.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\HALLIB\STM32H7xx_HAL_Driver\Src\stm32h7xx_hal_fdcan.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32h7xx_hal_pcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HALLIB\STM32H7xx_HAL_Driver\Src\stm32h7xx_hal_pcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32h7xx_hal_pcd_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HALLIB\STM32H7xx_HAL_Driver\Src\stm32h7xx_hal_pcd_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32h7xx_ll_usb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HALLIB\STM32H7xx_HAL_Driver\Src\stm32h7xx_ll_usb.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -982,6 +1012,51 @@
               <FileName>u8x8_u16toa.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\u8g2\u8x8_u16toa.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>USBDevice</GroupName>
+          <Files>
+            <File>
+              <FileName>usb_device.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\App\usb_device.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_cdc_if.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\App\usbd_cdc_if.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_desc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\App\usbd_desc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_cdc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\Library\usbd_cdc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\Library\usbd_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_ctlreq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\Library\usbd_ctlreq.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_ioreq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\Library\usbd_ioreq.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_conf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\USBDevice\Target\usbd_conf.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -54,8 +54,20 @@
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_uart_ex.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_usart.h \
   HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_usart_ex.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc\stm32h7xx_hal_pcd.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h \
+  HALLIB/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h \
   Middleware/RTOS/CMSIS_RTOS_V2\cmsis_os2.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdio.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdio.h \
   D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\string.h \
-  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\string.h BSP\DebugPort.hpp \
+  Middleware/USBDevice/App\usbd_cdc_if.h \
+  Middleware/USBDevice/Library\usbd_cdc.h \
+  Middleware/USBDevice/Library/usbd_ioreq.h \
+  Middleware/USBDevice/Library/usbd_def.h \
+  Middleware/USBDevice/Target\usbd_conf.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\libcxx\stdlib.h \
+  D:\keil\ 51\ARM\ARMCLANG\Bin\..\include\stdlib.h \
+  Middleware/USBDevice/Library/usbd_core.h \
+  Middleware/USBDevice/Library/usbd_ctlreq.h

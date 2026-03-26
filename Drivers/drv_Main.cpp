@@ -12,8 +12,15 @@ extern void MX_USART1_UART_Init(void);
 extern void MX_USART3_UART_Init(void);
 extern void MX_DMA_Init(void);
 extern void MX_TIM2_Init(void);
+extern void MX_TIM4_Init(void);
 extern void MX_SPI2_Init(void);
 extern void MX_FDCAN1_Init(void);
+extern void MX_SDMMC1_SD_Init(void);
+
+//.cpp文件使用.c文件中的函数需要声明
+extern "C" {
+    void MX_USB_DEVICE_Init(void);
+}
 
 //驱动初始化函数
 void init_drv_Main(void)
@@ -33,8 +40,13 @@ void init_drv_Main(void)
   MX_DMA_Init();
 	
   MX_TIM2_Init();
+  MX_TIM4_Init();
 	
   MX_FDCAN1_Init();
+  //没插TF卡的时候需要注释，不然会卡Error_Handler
+  //MX_SDMMC1_SD_Init();
+	
+  MX_USB_DEVICE_Init();
   //等待各模块稳定
   osDelay(3000);
   //驱动对象初始化

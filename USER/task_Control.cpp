@@ -30,11 +30,9 @@ void StartControlTask(void *argument)
     auto& mag = Board::getQMC5883P();
     auto& led = Board::getLedPwm();
     auto& key1 = Board::getKey1();
-    auto& key2 = Board::getKey2();
-    auto& key3 = Board::getKey3();
-    
-	auto& oled=Board::getOled();
-	
+	auto& oled = Board::getOled();
+
+
 	//ø™∆ÙOLEDœ‘ æ
 	OLED_Display_On(&oled);
 	
@@ -69,7 +67,7 @@ void StartControlTask(void *argument)
         
         ahrs.getEuler(roll,pitch,yaw);
 		printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
-		
+
 		OLED_ShowFloat(&oled,0,0,roll,4);
 		OLED_ShowFloat(&oled,1,0,pitch,4);	
 		OLED_ShowFloat(&oled,2,0,yaw,4);
