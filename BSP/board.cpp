@@ -146,18 +146,18 @@ private:
 };
 
 //CAN驱动
-class CanDriverWrapper {
+class UavcanCanDriverWrapper {
 public:
-    static CanDriver& getInstance() {
-        static CanDriver instance;
+    static UavcanCanDriver& getInstance() {
+        static UavcanCanDriver instance(&hfdcan1);
         return instance;
     }
     
-    CanDriverWrapper(const CanDriverWrapper&) = delete;
-    CanDriverWrapper& operator=(const CanDriverWrapper&) = delete;
+    UavcanCanDriverWrapper(const UavcanCanDriverWrapper&) = delete;
+    UavcanCanDriverWrapper& operator=(const UavcanCanDriverWrapper&) = delete;
     
 private:
-    CanDriverWrapper() = default;
+    UavcanCanDriverWrapper() = default;
 };
 
 //OLED设备
@@ -257,6 +257,12 @@ public:
             success = false;
         }
         
+		// 7. 初始化CAN
+        if(!UavcanCanDriverWrapper::getInstance().init()){
+		    printf("UAVCAN init failed!\r\n");
+            success = false;
+		}
+		
 		//初始化INA226
 		INA226Wrapper::getInstance().Init();
         	
@@ -265,10 +271,7 @@ public:
 		
 //		//调试端口初始化
 //		DebugPort::init(DebugPort::Type::UART);
-		
-        // 7. 初始化CAN（如果需要）
-        // CanDriverWrapper::getInstance().init();
-        
+		       
         if (success) {
             printf("All peripherals initialized successfully!\r\n");
         }
@@ -295,7 +298,7 @@ namespace Board {
 	
 	SPA06& getBaro() {return SPA06Wrapper::getInstance();}
 	
-    CanDriver& getCan() { return CanDriverWrapper::getInstance(); }
+    UavcanCanDriver& getCan() { return UavcanCanDriverWrapper::getInstance(); }
 	
     oled_dev_t& getOled() { return OledDevWrapper::getInstance(); }
 	
@@ -780,7 +783,7 @@ void MX_USART3_UART_Init(void)
   /* USER CODE END USART3_Init 2 */
 
 }
-//500kbps
+
 void MX_FDCAN1_Init(void)
 {
 
@@ -792,23 +795,20 @@ void MX_FDCAN1_Init(void)
 
   /* USER CODE END FDCAN1_Init 1 */
   hfdcan1.Instance = FDCAN1;
-  hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+  hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC; //使用普通CAN
   hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
-  hfdcan1.Init.AutoRetransmission = DISABLE;
+  hfdcan1.Init.AutoRetransmission = ENABLE;
   hfdcan1.Init.TransmitPause = DISABLE;
   hfdcan1.Init.ProtocolException = DISABLE;
-  hfdcan1.Init.NominalPrescaler = 16;
+	//FDCAN_CLK / (Prescaler × (1 + TimeSeg1 + TimeSeg2)): 16Mhz/(2*(1+16+3))=1Mhz
+  hfdcan1.Init.NominalPrescaler = 1;
   hfdcan1.Init.NominalSyncJumpWidth = 1;
-  hfdcan1.Init.NominalTimeSeg1 = 2;
-  hfdcan1.Init.NominalTimeSeg2 = 2;
-  hfdcan1.Init.DataPrescaler = 10;
-  hfdcan1.Init.DataSyncJumpWidth = 1;
-  hfdcan1.Init.DataTimeSeg1 = 13;
-  hfdcan1.Init.DataTimeSeg2 = 2;
+  hfdcan1.Init.NominalTimeSeg1 = 12;
+  hfdcan1.Init.NominalTimeSeg2 = 3;
   hfdcan1.Init.MessageRAMOffset = 0;
-  hfdcan1.Init.StdFiltersNbr = 0;
-  hfdcan1.Init.ExtFiltersNbr = 0;
-  hfdcan1.Init.RxFifo0ElmtsNbr = 0;
+  hfdcan1.Init.StdFiltersNbr = 1;
+  hfdcan1.Init.ExtFiltersNbr = 1;
+  hfdcan1.Init.RxFifo0ElmtsNbr = 16;
   hfdcan1.Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_8;
   hfdcan1.Init.RxFifo1ElmtsNbr = 0;
   hfdcan1.Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_8;
@@ -816,13 +816,33 @@ void MX_FDCAN1_Init(void)
   hfdcan1.Init.RxBufferSize = FDCAN_DATA_BYTES_8;
   hfdcan1.Init.TxEventsNbr = 0;
   hfdcan1.Init.TxBuffersNbr = 0;
-  hfdcan1.Init.TxFifoQueueElmtsNbr = 0;
+  hfdcan1.Init.TxFifoQueueElmtsNbr = 32;
   hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   hfdcan1.Init.TxElmtSize = FDCAN_DATA_BYTES_8;
   if (HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
   {
     Error_Handler();
   }
+  //配置Filter
+  FDCAN_FilterTypeDef sFilterConfig;
+  //使用扩展ID
+  sFilterConfig.IdType = FDCAN_EXTENDED_ID;
+  sFilterConfig.FilterIndex = 0;
+  sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+  sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+  sFilterConfig.FilterID1 = 0x000;
+  sFilterConfig.FilterID2 = 0x000;
+
+  HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
+  
+  HAL_FDCAN_ConfigGlobalFilter(
+    &hfdcan1,
+    FDCAN_ACCEPT_IN_RX_FIFO0, // 非匹配标准ID
+    FDCAN_ACCEPT_IN_RX_FIFO0, // 非匹配扩展ID
+    FDCAN_REJECT_REMOTE,
+    FDCAN_REJECT_REMOTE
+);
+  
   /* USER CODE BEGIN FDCAN1_Init 2 */
 
   /* USER CODE END FDCAN1_Init 2 */

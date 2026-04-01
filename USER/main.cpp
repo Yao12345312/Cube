@@ -36,6 +36,7 @@
 
 void SystemClock_Config(void);
 void DriverInitTask(void* argument);
+	
 //初始化任务对象句柄
 osThreadId_t initTaskHandle;
 //线程描述结构体
@@ -69,8 +70,9 @@ int main(void)
 //驱动初始化任务
 void DriverInitTask(void * argument)
 {	
+	//初始化硬件驱动
 	init_drv_Main();
-	
+	//初始化应用程序
 	create_application_tasks();
 	
 	//删除初始化任务
@@ -134,7 +136,6 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 }
-
 
 extern "C" void Error_Handler(void)
 {

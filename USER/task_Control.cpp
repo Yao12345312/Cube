@@ -32,16 +32,16 @@ void StartControlTask(void *argument)
     auto& key1 = Board::getKey1();
 	auto& oled = Board::getOled();
 
-
 	//开启OLED显示
 	OLED_Display_On(&oled);
 	
-
     // 传感器数据变量
     float ax, ay, az;
     float gx, gy, gz;
     QMC5883P::MagData magData;
     float roll, pitch, yaw;	
+
+	static uint64_t last_time = 0;
 	
     while (1) {
         // 控制任务主循环
@@ -66,12 +66,12 @@ void StartControlTask(void *argument)
         );
         
         ahrs.getEuler(roll,pitch,yaw);
-		printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
+		//printf("%.4f,%.4f,%.4f\n",roll,pitch,yaw);
 
 		OLED_ShowFloat(&oled,0,0,roll,4);
 		OLED_ShowFloat(&oled,1,0,pitch,4);	
 		OLED_ShowFloat(&oled,2,0,yaw,4);
-			
+		
         //按键检测
         key1.update();
         Key::Event event = key1.getEvent();

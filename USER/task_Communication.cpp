@@ -1,6 +1,7 @@
 #include "task_Communication.hpp"
 #include "MAVLink_bridge.hpp"
 #include "MahonyAHRS.hpp"
+#include "esc_node.hpp"
 #include "board.hpp"
 #include <string>
 #include <cstdio>
@@ -77,40 +78,54 @@ void StartCommunicationTask(void *argument)
 	auto& led =Board::getLedPwm();
 	auto& oled=Board::getOled();
 	auto& buzzer=Board::getBuzzer();
+	auto& uavcan = Board::getCan();
+	
+	//电调初始化
+	ESCNode esc_node(uavcan);
+	esc_node.init();
 	
 	//上电蜂鸣器提示
-	buzzer.beep(2000,100);
+	//buzzer.beep(2000,100);
 	
 	//没插TF卡的时候注释，否则HAL库会初始化失败
-//   SD_Test();
+//  SD_Test();
 		 
-	if(!bluetooth.autoBaudScan())
-	{
-	Error_Handler();
-	}
-	//MAVLink封装帧
-	MavRxFrame_t frame;
-    uint32_t last_heartbeat = 0;
-    uint32_t now;
-	
-	float bat_vel;
-	//MAVLink未连接状态，设置红灯1HZ闪烁
-	led.setRGBBlink(50,0,0,1);
+//	if(!bluetooth.autoBaudScan())
+//	{
+//	Error_Handler();
+//	}
+//	//MAVLink封装帧
+//	MavRxFrame_t frame;
+//    uint32_t last_heartbeat = 0;
+//    uint32_t now;
+//	
+//	float bat_vel;
+//	//MAVLink未连接状态，设置红灯1HZ闪烁
+//	led.setRGBBlink(50,0,0,1);
 
     while (1) {
+	
+	//广播当前节点状态(1hz)
+	esc_node.send_node_status();
 
-    //处理接收到的MAVLink数据
-    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
-            MAVLink::ParseData(frame.data, frame.len);
-        }
-	//MAVLink通信成功，设置绿灯1HZ闪烁
-	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
-	//丢失连接，闪烁红灯
-		else{led.setRGBBlink(100,0,0,1);}
+	esc_node.spin_once();
+	//测试发送油门
+	esc_node.send_esc_raw(0,0.1f);
+
+	esc_node.spin_once();
 		
-	//发送心跳包
-	MAVLink::SendHeartbeat();
-			
+//    //处理接收到的MAVLink数据
+//    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
+//            MAVLink::ParseData(frame.data, frame.len);
+//        }
+//	//MAVLink通信成功，设置绿灯1HZ闪烁
+//	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
+//	//丢失连接，闪烁红灯
+//		else{led.setRGBBlink(100,0,0,1);}
+//		
+//	//发送心跳包
+//	MAVLink::SendHeartbeat();
+//			
         osDelay(100);
     }
 }

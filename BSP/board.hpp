@@ -156,7 +156,7 @@ namespace Board {
      * @brief 获取CAN驱动实例
      * @return CanDriver对象的引用
      */
-    CanDriver& getCan();
+    UavcanCanDriver& getCan();
     
     /**
      * @brief 获取OLED设备实例

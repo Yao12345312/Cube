@@ -1,50 +1,29 @@
 #pragma once
 
 #include "stm32h7xx_hal.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// ================= CAN ID 定义 =================
-#define eCAN_SEND_MOTOR_SPEED_FRAME   0x101
-#define eCAN_GET_MOTOR_SPEED_FRAME    0x102
-
-// 在线检测阈值
-#define CAN_OFFLINE_COUNT 100
-
-#ifdef __cplusplus
-}
-#endif
+#include "canard.h"
+#include <cstdint>
 
 
-class CanDriver
+class UavcanCanDriver
 {
 public:
-    CanDriver();
+    UavcanCanDriver(FDCAN_HandleTypeDef* hfdcan);
 
-    // 初始化
-    void Init(FDCAN_HandleTypeDef *hfdcan);
+    bool init();
+	//上层绑定canard
+	void attach_canard(CanardInstance* canard);
 
-    // 发送电机速度
-    void SendMotorSpeed(float ch2_speed, float ch3_speed);
+    void process_tx(uint8_t max_frams);
+    void process_rx(uint8_t max_frams);
 
-    // 获取接收速度
-    void GetMotorSpeed(float &ch2_speed, float &ch3_speed);
-
-    // 在线检测
-    bool IsOnline();
-
-    // 中断回调处理（必须在HAL回调中调用）
-    void RxCallback();
-
+    uint64_t micros64();
+	
+	void CAN_Send_Test();
+	void CAN_Receive_Test();
 private:
-    FDCAN_HandleTypeDef *hfdcan_;
+    void DWT_Init(void);
 
-    float rx_ch2_speed_;
-    float rx_ch3_speed_;
-
-    uint32_t rx_frame_count_;
-    bool is_online_;
+    FDCAN_HandleTypeDef* hfdcan_;
+    CanardInstance* canard_;
 };
-

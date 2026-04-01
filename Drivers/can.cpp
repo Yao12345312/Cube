@@ -1,135 +1,185 @@
 #include "can.hpp"
+#include <string.h>
+#include "uart3Driver.hpp"
 
-
-static CanDriver* s_can1_instance = nullptr;
-
-// ================= 全局接收缓存 =================
-static FDCAN_RxHeaderTypeDef g_rxHeader;
-static uint8_t g_rxData[8];
-
-CanDriver::CanDriver()
+UavcanCanDriver::UavcanCanDriver(FDCAN_HandleTypeDef* hfdcan)
+    : hfdcan_(hfdcan), canard_(nullptr)
 {
-    hfdcan_ = nullptr;
-    rx_ch2_speed_ = 0.0f;
-    rx_ch3_speed_ = 0.0f;
-    rx_frame_count_ = 0;
-    is_online_ = false;
 }
 
-// ================= 初始化 =================
-void CanDriver::Init(FDCAN_HandleTypeDef *hfdcan)
+void UavcanCanDriver::DWT_Init(void)
 {
-    hfdcan_ = hfdcan;
-	
-	s_can1_instance = this;
-	
-    // 启动 FDCAN
-    HAL_FDCAN_Start(hfdcan_);
-
-    // 使能接收中断
-    HAL_FDCAN_ActivateNotification(hfdcan_,
-        FDCAN_IT_RX_FIFO0_NEW_MESSAGE,
-        0);
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+//获取系统时间（us）
+uint64_t UavcanCanDriver::micros64()
+{
+    return DWT->CYCCNT / (SystemCoreClock / 1000000);
 }
 
-// ================= 发送电机速度 =================
-void CanDriver::SendMotorSpeed(float ch2_speed, float ch3_speed)
+bool UavcanCanDriver::init()
 {
-    FDCAN_TxHeaderTypeDef txHeader;
-    uint8_t txData[8];
+	
+    if (HAL_FDCAN_Start(hfdcan_) != HAL_OK)
+        return false;
 
-    int32_t ch2_i = (int32_t)(ch2_speed * 1000.0f);
-    int32_t ch3_i = (int32_t)(ch3_speed * 1000.0f);
+    DWT_Init();
 
-    txHeader.Identifier = eCAN_SEND_MOTOR_SPEED_FRAME;
+    return true;
+}
+
+void UavcanCanDriver::attach_canard(CanardInstance* canard)
+{
+    canard_ = canard;
+}
+
+
+void UavcanCanDriver::process_tx(uint8_t max_frams)
+{
+    const CanardCANFrame* txf = NULL;
+	uint8_t count = 0;
+	
+    while((txf = canardPeekTxQueue(canard_)) != NULL)
+    {	
+		
+		if(count++ >= max_frams){break;}
+		
+        FDCAN_TxHeaderTypeDef txHeader = {0};
+
+        txHeader.Identifier = txf->id & CANARD_CAN_EXT_ID_MASK;
+        txHeader.IdType = FDCAN_EXTENDED_ID;
+		//解析数据长度
+        uint32_t dlc;
+        switch (txf->data_len)
+        {
+            case 0: dlc = FDCAN_DLC_BYTES_0; break;
+            case 1: dlc = FDCAN_DLC_BYTES_1; break;
+            case 2: dlc = FDCAN_DLC_BYTES_2; break;
+            case 3: dlc = FDCAN_DLC_BYTES_3; break;
+            case 4: dlc = FDCAN_DLC_BYTES_4; break;
+            case 5: dlc = FDCAN_DLC_BYTES_5; break;
+            case 6: dlc = FDCAN_DLC_BYTES_6; break;
+            case 7: dlc = FDCAN_DLC_BYTES_7; break;
+            case 8: dlc = FDCAN_DLC_BYTES_8; break;
+            default: dlc = FDCAN_DLC_BYTES_8; break;
+        }
+		//配置发送帧头
+        txHeader.DataLength = dlc;
+        txHeader.TxFrameType = FDCAN_DATA_FRAME;
+        txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+        txHeader.BitRateSwitch = FDCAN_BRS_OFF;
+        txHeader.FDFormat = FDCAN_CLASSIC_CAN;
+		//送入发送队列
+        if (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &txHeader, txf->data) == HAL_OK)
+        {
+            canardPopTxQueue(canard_);
+        }
+        else
+        {
+            break; // FIFO满
+        }
+    }
+}
+
+void UavcanCanDriver::process_rx(uint8_t max_frams)
+{
+    FDCAN_RxHeaderTypeDef rxHeader;
+    uint8_t data[8];
+	uint8_t count = 0;
+	
+    while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan_, FDCAN_RX_FIFO0) > 0)
+    {	
+		if(count++ >= max_frams){break;}
+		
+        HAL_FDCAN_GetRxMessage(hfdcan_, FDCAN_RX_FIFO0, &rxHeader, data);
+
+        CanardCANFrame rx_frame;
+		//处理扩展帧
+        rx_frame.id = rxHeader.Identifier | CANARD_CAN_FRAME_EFF;
+		
+        uint8_t len;
+        switch (rxHeader.DataLength)
+        {
+            case FDCAN_DLC_BYTES_0: len = 0; break;
+            case FDCAN_DLC_BYTES_1: len = 1; break;
+            case FDCAN_DLC_BYTES_2: len = 2; break;
+            case FDCAN_DLC_BYTES_3: len = 3; break;
+            case FDCAN_DLC_BYTES_4: len = 4; break;
+            case FDCAN_DLC_BYTES_5: len = 5; break;
+            case FDCAN_DLC_BYTES_6: len = 6; break;
+            case FDCAN_DLC_BYTES_7: len = 7; break;
+            case FDCAN_DLC_BYTES_8: len = 8; break;
+            default: len = 8; break;
+        }
+
+        rx_frame.data_len = len;
+		
+	    memcpy(rx_frame.data, data, len);
+		
+		//if(((rx_frame.id >> 7)&0x1U) ? ((rx_frame.id>>8)& 0x7FU) == canardGetLocalNodeID(canard_) : 1){
+		canardHandleRxFrame(canard_, &rx_frame, micros64());
+		//}
+        
+
+    }
+}
+//HAL库发送测试函数
+void UavcanCanDriver::CAN_Send_Test()
+{
+    FDCAN_TxHeaderTypeDef txHeader = {0};
+    uint8_t txData[8] = {1,1,2,4,5,6,7,8};
+
+    txHeader.Identifier = 0x123;
     txHeader.IdType = FDCAN_STANDARD_ID;
     txHeader.TxFrameType = FDCAN_DATA_FRAME;
     txHeader.DataLength = FDCAN_DLC_BYTES_8;
     txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
     txHeader.BitRateSwitch = FDCAN_BRS_OFF;
     txHeader.FDFormat = FDCAN_CLASSIC_CAN;
-    txHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-    txHeader.MessageMarker = 0;
 
-    txData[0] = ch2_i & 0xFF;
-    txData[1] = (ch2_i >> 8) & 0xFF;
-    txData[2] = (ch2_i >> 16) & 0xFF;
-    txData[3] = (ch2_i >> 24) & 0xFF;
-
-    txData[4] = ch3_i & 0xFF;
-    txData[5] = (ch3_i >> 8) & 0xFF;
-    txData[6] = (ch3_i >> 16) & 0xFF;
-    txData[7] = (ch3_i >> 24) & 0xFF;
-
-    HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &txHeader, txData);
+	if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan_) > 0)
+	{
+		if (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &txHeader, txData) == HAL_OK)
+		{
+			printf("TX success\r\n");
+		}
+	}
+	else
+	{
+		printf("TX FIFO FULL\r\n");
+	}
 }
-
-// ================= 接收回调处理 =================
-void CanDriver::RxCallback()
+//HAL库接收测试函数
+void UavcanCanDriver::CAN_Receive_Test()
 {
-    HAL_FDCAN_GetRxMessage(hfdcan_,
-        FDCAN_RX_FIFO0,
-        &g_rxHeader,
-        g_rxData);
+    FDCAN_RxHeaderTypeDef rxHeader;
+    uint8_t rxData[8];
+	
+				FDCAN_ProtocolStatusTypeDef status;
+	HAL_FDCAN_GetProtocolStatus(hfdcan_, &status);
 
-    // 标准帧 + 数据帧
-    if (g_rxHeader.IdType == FDCAN_STANDARD_ID &&
-        g_rxHeader.RxFrameType == FDCAN_DATA_FRAME)
+	printf("LEC=%d, ACT=%d, EP=%d, BO=%d\r\n",
+        status.LastErrorCode,
+        status.Activity,
+        status.ErrorPassive,
+        status.BusOff);	
+	
+	printf("RX FIFO level: %d\r\n",
+    HAL_FDCAN_GetRxFifoFillLevel(hfdcan_, FDCAN_RX_FIFO0));
+	
+    if (HAL_FDCAN_GetRxFifoFillLevel(hfdcan_, FDCAN_RX_FIFO0) > 0)
     {
-        if (g_rxHeader.Identifier == eCAN_GET_MOTOR_SPEED_FRAME)
+        if ( HAL_FDCAN_GetRxMessage(hfdcan_, FDCAN_RX_FIFO0, &rxHeader, rxData) == HAL_OK)
         {
-            int32_t ch2_i =
-                g_rxData[0] |
-                (g_rxData[1] << 8) |
-                (g_rxData[2] << 16) |
-                (g_rxData[3] << 24);
+            printf("RX ID: 0x%lx | Data: ", rxHeader.Identifier);
 
-            int32_t ch3_i =
-                g_rxData[4] |
-                (g_rxData[5] << 8) |
-                (g_rxData[6] << 16) |
-                (g_rxData[7] << 24);
-
-            rx_ch2_speed_ = (float)ch2_i / 1000.0f;
-            rx_ch3_speed_ = (float)ch3_i / 1000.0f;
-
-            rx_frame_count_ = 0;
-            is_online_ = true;
-        }
-    }
-}
-
-// ================= 获取速度 =================
-void CanDriver::GetMotorSpeed(float &ch2_speed, float &ch3_speed)
-{
-    ch2_speed = rx_ch2_speed_;
-    ch3_speed = rx_ch3_speed_;
-}
-
-// ================= 在线检测 =================
-bool CanDriver::IsOnline()
-{
-    rx_frame_count_++;
-
-    if (rx_frame_count_ > CAN_OFFLINE_COUNT)
-    {
-        is_online_ = false;
-    }
-
-    return is_online_;
-}
-
-extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
-                                          uint32_t RxFifo0ITs)
-{
-    if (hfdcan->Instance == FDCAN1)
-    {
-        if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)
-        {
-            if (s_can1_instance != nullptr)
+            for (int i = 0; i < 8; i++)
             {
-                s_can1_instance->RxCallback();
+                printf("%d ", rxData[i]);
             }
+            printf("\r\n");
         }
     }
 }
