@@ -9,6 +9,7 @@
 #define INA226_REG_SHUNT   0x01
 #define INA226_REG_BUS     0x02
 
+
 class INA226
 {
 public:
@@ -19,8 +20,19 @@ public:
 	
 	float INA226_ReadBusVoltage(void);
 	
-private:
-	
-	I2C_HandleTypeDef *i2c;
+	bool INA226_get_bat_status(float vel);
 
+    enum BatCellsNum {
+        CELLS_3S = 3,
+        CELLS_4S = 4,
+        CELLS_6S = 6
+    };
+	
+private:
+		
+	static constexpr float LOW_POWER_VEL = 3.6f;
+
+	I2C_HandleTypeDef *i2c;
+	
+	
 };

@@ -160,6 +160,22 @@ private:
     UavcanCanDriverWrapper() = default;
 };
 
+//电调驱动
+class ESCNodeWrapper {
+public:
+    static ESCNode& getInstance() {
+        //UavcanCanDriver必须先初始化
+        static ESCNode instance(Board::getCan());
+        return instance;
+    }
+    
+    ESCNodeWrapper(const ESCNodeWrapper&) = delete;
+    ESCNodeWrapper& operator=(const ESCNodeWrapper&) = delete;
+    
+private:
+    ESCNodeWrapper() = default;
+};
+
 //OLED设备
 class OledDevWrapper {
 public:
@@ -257,12 +273,15 @@ public:
             success = false;
         }
         
-		// 7. 初始化CAN
+		//初始化CAN
         if(!UavcanCanDriverWrapper::getInstance().init()){
 		    printf("UAVCAN init failed!\r\n");
             success = false;
 		}
 		
+		//初始化ESC
+        ESCNodeWrapper::getInstance().init();
+
 		//初始化INA226
 		INA226Wrapper::getInstance().Init();
         	
@@ -303,6 +322,8 @@ namespace Board {
     oled_dev_t& getOled() { return OledDevWrapper::getInstance(); }
 	
     BluetoothDriver& getBluetooth() { return BluetoothDriverWrapper::getInstance(); }
+	
+	ESCNode& getESCNode() { return ESCNodeWrapper::getInstance(); }
 	
     // 获取按键
     Key& getKey1() { return key1; }
@@ -354,6 +375,15 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  
+    /*Configure GPIO pin : PE0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+	//电调电平拉高
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -800,8 +830,8 @@ void MX_FDCAN1_Init(void)
   hfdcan1.Init.AutoRetransmission = ENABLE;
   hfdcan1.Init.TransmitPause = DISABLE;
   hfdcan1.Init.ProtocolException = DISABLE;
-	//FDCAN_CLK / (Prescaler × (1 + TimeSeg1 + TimeSeg2)): 16Mhz/(2*(1+16+3))=1Mhz
-  hfdcan1.Init.NominalPrescaler = 1;
+	//FDCAN_CLK / (Prescaler × (1 + TimeSeg1 + TimeSeg2)): 16Mhz/(2*(1+16+3))=500khz
+  hfdcan1.Init.NominalPrescaler = 2;
   hfdcan1.Init.NominalSyncJumpWidth = 1;
   hfdcan1.Init.NominalTimeSeg1 = 12;
   hfdcan1.Init.NominalTimeSeg2 = 3;

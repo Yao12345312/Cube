@@ -1,5 +1,6 @@
 #include "drv_Main.hpp"
 #include "task_Control.hpp"
+#include "task_Display.hpp"
 #include "task_Communication.hpp"
 #include "uart3Driver.hpp"
 #include "board.hpp"
@@ -43,6 +44,7 @@ void init_drv_Main(void)
   MX_TIM4_Init();
 	
   MX_FDCAN1_Init();
+	
   //没插TF卡的时候需要注释，不然会卡Error_Handler
   //MX_SDMMC1_SD_Init();
 	
@@ -61,18 +63,6 @@ void create_application_tasks(void)
 {
     printf("Creating application tasks...\r\n");
     
-    //创建通信任务
-    communicationTaskHandle = osThreadNew(
-        StartCommunicationTask, 
-        NULL, 
-        &communicationTask_attributes
-    );
-    
-    if (communicationTaskHandle == NULL) {
-        printf("Failed to create Communication Task!\r\n");
-        Error_Handler();
-    }
-    
     //创建控制任务
     controlTaskHandle = osThreadNew(
         StartControlTask, 
@@ -84,6 +74,30 @@ void create_application_tasks(void)
         printf("Failed to create Control Task!\r\n");
         Error_Handler();
     }
+	
+	//创建通信任务
+    communicationTaskHandle = osThreadNew(
+        StartCommunicationTask, 
+        NULL, 
+        &communicationTask_attributes
+    );
     
-    printf("All tasks created successfully!\r\n");
+    if (communicationTaskHandle == NULL) {
+        printf("Failed to create Communication Task!\r\n");
+        Error_Handler();
+    }
+    
+	//创建显示任务
+    DisplayTaskHandle = osThreadNew(
+        StartDisplayTask, 
+        NULL, 
+        &DisplayTask_attributes
+    );
+    
+    if (DisplayTaskHandle == NULL) {
+        printf("Failed to create Display Task!\r\n");
+        Error_Handler();
+    }
+	
+	   printf("All tasks created successfully!\r\n");
 }

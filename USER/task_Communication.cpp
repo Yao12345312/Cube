@@ -1,18 +1,17 @@
 #include "task_Communication.hpp"
 #include "MAVLink_bridge.hpp"
 #include "MahonyAHRS.hpp"
-#include "esc_node.hpp"
 #include "board.hpp"
 #include <string>
 #include <cstdio>
-extern SD_HandleTypeDef hsd1;
+
 // 定义任务句柄
 osThreadId_t communicationTaskHandle = NULL;
 
 // 定义任务属性
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
-    .stack_size = 2048,      // 通信任务栈大小
+    .stack_size = 2 * 1024,      // 通信任务栈大小
     .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -20,6 +19,9 @@ const osThreadAttr_t communicationTask_attributes = {
 
 uint8_t txBuf[BLOCK_SIZE];
 uint8_t rxBuf[BLOCK_SIZE];
+
+extern SD_HandleTypeDef hsd1;
+
 //SD卡快速测试函数
 void SD_Test(void)
 {
@@ -78,11 +80,7 @@ void StartCommunicationTask(void *argument)
 	auto& led =Board::getLedPwm();
 	auto& oled=Board::getOled();
 	auto& buzzer=Board::getBuzzer();
-	auto& uavcan = Board::getCan();
-	
-	//电调初始化
-	ESCNode esc_node(uavcan);
-	esc_node.init();
+	auto& esc_node = Board::getESCNode();
 	
 	//上电蜂鸣器提示
 	//buzzer.beep(2000,100);
@@ -101,19 +99,11 @@ void StartCommunicationTask(void *argument)
 //	
 //	float bat_vel;
 //	//MAVLink未连接状态，设置红灯1HZ闪烁
-//	led.setRGBBlink(50,0,0,1);
+	led.setRGBBlink(50,0,0,1);
 
     while (1) {
 	
-	//广播当前节点状态(1hz)
-	esc_node.send_node_status();
-
-	esc_node.spin_once();
-	//测试发送油门
-	esc_node.send_esc_raw(0,0.1f);
-
-	esc_node.spin_once();
-		
+	
 //    //处理接收到的MAVLink数据
 //    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
 //            MAVLink::ParseData(frame.data, frame.len);

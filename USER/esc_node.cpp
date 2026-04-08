@@ -1,13 +1,22 @@
 #include "esc_node.hpp"
 #include "dronecan_msgs.h"
-#include "uavcan.equipment.esc.RawCommand.h" 
+#include "uart3Driver.hpp"
 
 static struct uavcan_protocol_NodeStatus node_status;
-	
+
 //初始化时先实例化can_driver,再传入can_driver实例化ESCNode
 ESCNode::ESCNode(UavcanCanDriver& can_driver)
     : can_driver_(can_driver)
-{
+	, node_status_transfer_id_(0)      // 构造函数中初始化transfer ID为0
+    , esc_index_transfer_id_(0)
+    , calib_esc_transfer_id_(0)
+    , esc_rpm_commmand_transfer_id_(0)
+	, esc_arm_flag(false)
+{	
+	//发送指令互斥锁
+	m_send_mutex = osMutexNew(NULL);
+	//获取状态互斥锁
+	m_esc_get_staus_mutex = osMutexNew(NULL);
 }
 
 void ESCNode::init()
@@ -28,9 +37,9 @@ void ESCNode::init()
 
 void ESCNode::spin_once()
 {	
-	//每次最多发送10帧
-    can_driver_.process_tx(1);
-    can_driver_.process_rx(1);
+	//每次最多发送1帧
+    can_driver_.process_tx(5);
+    can_driver_.process_rx(5);
 }
 //处理接收到的信息
 void ESCNode::onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
@@ -46,6 +55,18 @@ void ESCNode::onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer
 			self->handle_GetNodeInfo(ins, transfer);
 				break;
 
+        }
+    }
+	//处理广播类型
+	if (transfer->transfer_type == CanardTransferTypeBroadcast)
+    {
+        switch (transfer->data_type_id)
+        {
+            case UAVCAN_EQUIPMENT_ESC_CUBESTATUS_ID:
+                self->handle_esc_status(ins, transfer);
+                break;
+
+				
         }
     }
 }
@@ -65,14 +86,23 @@ bool ESCNode::shouldAcceptTransfer(const CanardInstance* ins,
 			case UAVCAN_PROTOCOL_GETNODEINFO_ID:
 				*out_data_type_signature = UAVCAN_PROTOCOL_GETNODEINFO_REQUEST_SIGNATURE;
 				return true;
-			
 		}
 	}
+	if (transfer_type == CanardTransferTypeBroadcast)
+    {
+        switch (data_type_id)
+        {
+            case UAVCAN_EQUIPMENT_ESC_CUBESTATUS_ID:
+                *out_data_type_signature = UAVCAN_EQUIPMENT_ESC_CUBESTATUS_SIGNATURE;
+                return true;
+			
+        }
+    }
 	
 	return false;
 	
 }
-
+//处理接收到的节点信息
 void ESCNode::handle_GetNodeInfo(CanardInstance *ins, CanardRxTransfer *transfer)
 {	
 	ESCNode* self = (ESCNode*)ins->user_reference;
@@ -102,11 +132,54 @@ void ESCNode::handle_GetNodeInfo(CanardInstance *ins, CanardRxTransfer *transfer
                            total_size);
 	
 }
+
+void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
+{	
+	ESCNode* self = (ESCNode*)ins->user_reference;
+	
+    struct uavcan_equipment_esc_CubeStatus msg;
+
+    if (!uavcan_equipment_esc_CubeStatus_decode(transfer, &msg))
+    {
+        // 解析成功
+        uint8_t esc_id = msg.esc_index;
+
+        float voltage = msg.voltage;
+        float current = msg.current;
+        float temperature = msg.temperature;
+		//获取电调实际转速
+        int32_t rpm = msg.rpm;
+		//获取电调控制转速
+		int32_t target_rpm = msg.target_rpm;
+		
+		bool calib_flag = msg.calib_done;
+		
+        printf("ESC[%d]: rpm=%ld, V=%.2f, I=%.2f, T=%.2f\n",
+               esc_id, rpm, voltage, current, temperature);
+
+        //存储电调状态
+        if (esc_id < 3)
+		{	
+			//osMutexAcquire(self->m_esc_get_staus_mutex, osWaitForever);
+			
+			self->esc_status_[esc_id].rpm = rpm;
+			self->esc_status_[esc_id].voltage = voltage;
+			self->esc_status_[esc_id].current = current;
+			self->esc_status_[esc_id].temperature = temperature;
+			self->esc_status_[esc_id].calib_flag=calib_flag;
+			
+			//osMutexRelease(self->m_esc_get_staus_mutex);
+		}
+    }
+	
+}
+
 	
 //广播当前节点状态
 void ESCNode::send_node_status()
-{
-    uavcan_protocol_NodeStatus msg;
+{	
+
+    struct uavcan_protocol_NodeStatus msg;
 	//获取系统时间（s）
     msg.uptime_sec = can_driver_.micros64() / 1000000;
     msg.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK;
@@ -119,7 +192,6 @@ void ESCNode::send_node_status()
 	//序列化数据并获取有效长度
     uint32_t size = uavcan_protocol_NodeStatus_encode(&msg, buffer);
 
-    static uint8_t transfer_id = 0;
 	/*
     * param1:Canard库实例指针，包含了内存池、节点ID等状态信息
     * param2:数据类型签名：由DSDL定义计算出的64位哈希值，用于唯一标识消息类型。接收端通过此值验证消息格式正确性
@@ -129,60 +201,144 @@ void ESCNode::send_node_status()
     * param6:有效负载数据
     * param7:有效数据负载长度
     */
+	osMutexAcquire(m_send_mutex, osWaitForever);
+	
     canardBroadcast(&canard_,
                     UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
                     UAVCAN_PROTOCOL_NODESTATUS_ID,
-                    &transfer_id,
+                    &node_status_transfer_id_,
                     CANARD_TRANSFER_PRIORITY_LOW,
                     buffer,
                     size);
 					
-	transfer_id++;
+	node_status_transfer_id_++;
+	
+	osMutexRelease(m_send_mutex);
 }
 
-//广播电调油门值，传入指定电调序号和油门值[-1~1],负值表示反转
-void ESCNode::send_esc_raw(uint8_t esc_index, float throttle)
+//设置电调编号
+void ESCNode::set_esc_index_command(uint8_t target_esc_index)
 {
-    // 油门限幅
-    if (throttle > 1.0f) throttle = 1.0f;
-    if (throttle < -1.0f) throttle = -1.0f;
+
+    struct uavcan_equipment_esc_CubeSetID  msg = {0};
+	//传入目标电调ID序号
+	msg.esc_index=target_esc_index;
+
+    //存放序列化后的数据
+    uint8_t buffer[32];
+	//序列化数据并获取有效长度
+    uint32_t size = uavcan_equipment_esc_CubeSetID_encode(&msg, buffer);
 	
-    uavcan_equipment_esc_RawCommand msg;
+	//序列化失败
+	if(size == 0){return;}
+	
+	//osMutexAcquire(m_send_mutex, osWaitForever);
+	
+    canardBroadcast(&canard_,
+                   UAVCAN_EQUIPMENT_ESC_CUBESETID_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_CUBESETID_ID,
+                    &esc_index_transfer_id_,
+                    CANARD_TRANSFER_PRIORITY_MEDIUM, 
+                    buffer,
+                    size);
+	
+	esc_index_transfer_id_++;
+	
+	//osMutexRelease(m_send_mutex);
+}
+//电调校准命令
+void ESCNode::calib_esc_command(uint8_t target_esc_index)
+{
+
+    struct uavcan_equipment_esc_CubeCalibCommand msg = {0};
+	//传入需要校准的目标电调ID序号
+	msg.esc_index=target_esc_index;
+
+    //存放序列化后的数据
+    uint8_t buffer[32];
+	//序列化数据并获取有效长度
+    uint32_t size = uavcan_equipment_esc_CubeCalibCommand_encode(&msg, buffer);
+	
+	
+	//序列化失败
+	if(size == 0){return;}
+	
+	//osMutexAcquire(m_send_mutex, osWaitForever);
+	
+    canardBroadcast(&canard_,
+                    UAVCAN_EQUIPMENT_ESC_CUBECALIBCOMMAND_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_CUBECALIBCOMMAND_ID,
+                    &calib_esc_transfer_id_,
+                    CANARD_TRANSFER_PRIORITY_MEDIUM, 
+                    buffer,
+                    size);
+	
+	calib_esc_transfer_id_++;
+	
+	//osMutexRelease(m_send_mutex);
+}
+
+
+//广播电调油门值，传入指定电调序号和转速（rpm）,负值表示反转
+void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
+{	
+
+    // 转速限幅
+    if (rpm >  3000) rpm = 3000;
+    if (rpm < -3000) rpm = -3000;
+	
+    struct uavcan_equipment_esc_CubeRPMCommand msg = {0};
 	//设置命令数量
-    msg.cmd.len = esc_index + 1;
+    msg.rpm.len = Max_ESC_Num;
 	
-	//设置单个电调油门，其他通道设置0
-    for (uint8_t i = 0; i < msg.cmd.len; i++)
+	//设置单个电调转速，其他通道设置0
+    for (uint8_t i = 0; i < msg.rpm.len; i++)
     {
-        if (i == esc_index)
-        {	
-			//油门值映射为-8191~8191
-            msg.cmd.data[i] = (int16_t)(throttle * 8192);
-        }
-        else
-        {
-            msg.cmd.data[i] = 0;
-        }
+		//解锁电调
+		if(!esc_arm_flag)
+		{
+		msg.arm = 1;
+		esc_arm_flag = true;	
+		}
+		
+		msg.rpm.data[i] = (i == esc_index) ? rpm : 0;
     }
 
     //存放序列化后的数据
     uint8_t buffer[64];
 	//序列化数据并获取有效长度
-    uint32_t size = uavcan_equipment_esc_RawCommand_encode(&msg, buffer);
+    uint32_t size = uavcan_equipment_esc_CubeRPMCommand_encode(&msg, buffer);
 	
 	//序列化失败
 	if(size == 0){return;}
-
-    // 发送
-    static uint8_t transfer_id = 0;
+	
+	//osMutexAcquire(m_send_mutex, osWaitForever);
 	
     canardBroadcast(&canard_,
-                    UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE,
-                    UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID,
-                    &transfer_id,
+                    UAVCAN_EQUIPMENT_ESC_CUBERPMCOMMAND_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_CUBERPMCOMMAND_ID,
+                    &esc_rpm_commmand_transfer_id_,
                     CANARD_TRANSFER_PRIORITY_HIGH, //控制指令设置高优先级
                     buffer,
                     size);
 	
-	transfer_id++;
+	esc_rpm_commmand_transfer_id_++;
+	
+	//osMutexRelease(m_send_mutex);
+}
+//获取电调状态
+bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
+{	
+	if (esc_index >= Max_ESC_Num)
+      return false;
+	
+	//osMutexAcquire(m_esc_get_staus_mutex, osWaitForever);
+
+    out = esc_status_[esc_index];
+	
+	//osMutexRelease(m_esc_get_staus_mutex);
+	
+    return true;
+	
+	
 }

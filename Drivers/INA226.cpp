@@ -47,3 +47,14 @@ float INA226::INA226_ReadBusVoltage(void)
 
     return voltage;
 }
+/**
+ * @brief ÅÐ¶Ïµç³Ø×´Ì¬ÊÇ·ñ½¡¿µ
+ * @return µç³Ø½¡¿µ×´Ì¬±êÖ¾
+ */
+bool INA226::INA226_get_bat_status(float bat_vel)
+{
+	if(bat_vel < BatCellsNum::CELLS_3S *LOW_POWER_VEL )
+		return false;
+	else{return true;}
+
+}

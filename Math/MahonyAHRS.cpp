@@ -110,8 +110,40 @@ void MahonyAHRS::update(float gx, float gy, float gz,
     q2 *= recipNorm;
     q3 *= recipNorm;
 	
-	//printf("%.4f,%.4f,%.4f\n",mx,my,ez);
+
 }
+
+void MahonyAHRS::getQuaternion(float &w, float &x, float &y, float &z)
+{
+    w = q0;
+    x = q1;
+    y = q2;
+    z = q3;
+}
+
+void MahonyAHRS::getAttitudeError(float &ex, float &ey, float &ez)
+{
+    // 当前姿态 q = [q0, q1, q2, q3]
+    // 目标姿态 qd = [1, 0, 0, 0]
+
+    // 小角度近似(LQR控制线性化要求前提）
+    ex = 2.0f * q1;
+    ey = 2.0f * q2;
+    ez = 2.0f * q3;
+
+    //误差限幅，在可近似线性化范围内
+    const float limit = 0.5f; // ≈ 30°
+    
+    if (ex > limit) ex = limit;
+    if (ex < -limit) ex = -limit;
+
+    if (ey > limit) ey = limit;
+    if (ey < -limit) ey = -limit;
+
+    if (ez > limit) ez = limit;
+    if (ez < -limit) ez = -limit;
+}
+
 
 void MahonyAHRS::getEuler(float &roll, float &pitch, float &yaw)
 {

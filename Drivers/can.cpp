@@ -117,7 +117,7 @@ void UavcanCanDriver::process_rx(uint8_t max_frams)
         rx_frame.data_len = len;
 		
 	    memcpy(rx_frame.data, data, len);
-		
+			
 		//if(((rx_frame.id >> 7)&0x1U) ? ((rx_frame.id>>8)& 0x7FU) == canardGetLocalNodeID(canard_) : 1){
 		canardHandleRxFrame(canard_, &rx_frame, micros64());
 		//}

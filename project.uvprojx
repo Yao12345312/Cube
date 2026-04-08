@@ -399,6 +399,11 @@
               <FilePath>.\USER\task_Communication.cpp</FilePath>
             </File>
             <File>
+              <FileName>task_Display.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\USER\task_Display.cpp</FilePath>
+            </File>
+            <File>
               <FileName>esc_node.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\USER\esc_node.cpp</FilePath>
@@ -1352,6 +1357,26 @@
               <FileType>1</FileType>
               <FilePath>.\Middleware\DroneCan\src\uavcan.tunnel.Targetted.c</FilePath>
             </File>
+            <File>
+              <FileName>uavcan.equipment.esc.CubeCalibCommand.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\DroneCan\src\uavcan.equipment.esc.CubeCalibCommand.c</FilePath>
+            </File>
+            <File>
+              <FileName>uavcan.equipment.esc.CubeStatus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\DroneCan\src\uavcan.equipment.esc.CubeStatus.c</FilePath>
+            </File>
+            <File>
+              <FileName>uavcan.equipment.esc.CubeSetID.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\DroneCan\src\uavcan.equipment.esc.CubeSetID.c</FilePath>
+            </File>
+            <File>
+              <FileName>uavcan.equipment.esc.CubeRPMCommand.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Middleware\DroneCan\src\uavcan.equipment.esc.CubeRPMCommand.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1632,11 +1657,6 @@
               <FilePath>.\u8g2\u8x8_capture.c</FilePath>
             </File>
             <File>
-              <FileName>u8x8_d_ssd1315_128x64_noname.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\u8g2\u8x8_d_ssd1315_128x64_noname.c</FilePath>
-            </File>
-            <File>
               <FileName>u8x8_debounce.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\u8g2\u8x8_debounce.c</FilePath>
@@ -1690,6 +1710,11 @@
               <FileName>u8x8_u16toa.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\u8g2\u8x8_u16toa.c</FilePath>
+            </File>
+            <File>
+              <FileName>u8x8_d_ssd1306_128x64_noname.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\u8g2\u8x8_d_ssd1306_128x64_noname.c</FilePath>
             </File>
           </Files>
         </Group>

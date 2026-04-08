@@ -85,3 +85,8 @@
 #include "uavcan.tunnel.Protocol.h"
 #include "uavcan.tunnel.SerialConfig.h"
 #include "uavcan.tunnel.Targetted.h"
+//Cube自定义消息
+#include <uavcan.equipment.esc.CubeCalibCommand.h>
+#include <uavcan.equipment.esc.CubeStatus.h>
+#include <uavcan.equipment.esc.CubeSetID.h>
+#include <uavcan.equipment.esc.CubeRPMCommand.h>

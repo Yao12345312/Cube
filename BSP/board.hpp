@@ -79,6 +79,7 @@ void Error_Handler(void);
 #include "led.hpp"
 #include "oled.hpp"
 #include "can.hpp"
+#include "esc_node.hpp"
 #include "KT6368A.hpp"
 #include "BMI088.hpp"
 #include "SPA06.hpp"
@@ -140,7 +141,7 @@ namespace Board {
      * @brief 获取Buzzer驱动实例
      * @return Buzzer对象的引用
      */
-	 Buzzer& getBuzzer();
+	Buzzer& getBuzzer();
 	 
     /**
      * @brief 获取BMI088 IMU实例
@@ -158,6 +159,12 @@ namespace Board {
      */
     UavcanCanDriver& getCan();
     
+	/**
+     * @brief 获取ESC驱动实例
+     * @return ESCNode对象的引用
+     */
+	ESCNode& getESCNode();
+	
     /**
      * @brief 获取OLED设备实例
      * @return oled_dev_t结构体的引用
