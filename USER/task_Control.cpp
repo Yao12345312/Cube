@@ -50,16 +50,16 @@ void StartControlTask(void *argument)
 	
 	//获取电调状态
 	ESCNode::ESCStatusCache esc_status[3]={0};
-	float esc_output = 0.0f;
+	int32_t esc_output = 0;
+	int32_t esc_last_output = 0;
 	
 	static uint64_t last_time = 0;
 	
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
 	
 	//电调初始化
-	esc_node.set_esc_index_command(ESC2_Index);
+	esc_node.set_esc_index_command((ESC1_Index + 1));
 	
-	esc_node.calib_esc_command(ESC2_Index);
 	
 	esc_node.spin_once();
 	
@@ -90,33 +90,41 @@ void StartControlTask(void *argument)
 		ahrs.getAttitudeError(ex, ey, ez);
 		
 		esc_node.send_node_status();	
-			
-		
-			
 
 		esc_node.spin_once();
 				
 		//获取电调转速
-		if(esc_node.get_esc_status(ESC2_Index,esc_status[ESC2_Index]))
-		{
-			if(esc_status[ESC2_Index].calib_flag == 1)	
+		if(esc_node.get_esc_status(ESC1_Index,esc_status[ESC1_Index]))
+		{	
+			//LQR输出计算
+			esc_output= LQR_Compute(ex, gx * DEG_TO_RAD, esc_status[ESC1_Index].rpm);
+			
+			if(esc_status[ESC1_Index].calib_flag == 1 && esc_output !=esc_last_output)	
 			{
-			esc_node.send_esc_rpm_commmand(ESC2_Index,1000);
+				esc_node.send_esc_rpm_commmand(ESC1_Index,300);		
+				
+				esc_last_output = esc_output;
+			}
+			else if(esc_status[ESC1_Index].calib_flag == 1 && ina226.INA226_get_bat_status(ina226.INA226_ReadBusVoltage()))
+			{
+				
+			}
+			else
+			{
+				esc_node.calib_esc_command((ESC1_Index + 1));
 			}
 
-		//原始roll需要转换到LQR建模的坐标系
-		//esc_output= LQR_Compute(ex, gx * DEG_TO_RAD, esc_status[0].rpm);
 		}
 		
 		OLED_ShowString(&oled, 0, 0,"vol:");
-		OLED_ShowString(&oled, 1, 0,"cur:");
+		OLED_ShowString(&oled, 1, 0,"cal:");
 		OLED_ShowString(&oled, 2, 0,"tmp:");
 		OLED_ShowString(&oled, 3, 0,"rpm:");
 		
-		OLED_ShowFloat(&oled,0,5,esc_status[ESC2_Index].voltage,2);	
-		OLED_ShowFloat(&oled,1,5,esc_status[ESC2_Index].current,2);
-		OLED_ShowFloat(&oled,2,5,esc_status[ESC2_Index].temperature,2);
-		OLED_ShowInt32(&oled,3,5, esc_status[ESC2_Index].rpm);
+		OLED_ShowFloat(&oled,0,5,esc_status[ESC1_Index].voltage,2);	
+		OLED_ShowFloat(&oled,1,5,esc_status[ESC1_Index].calib_flag,2);
+		OLED_ShowFloat(&oled,2,5,esc_status[ESC1_Index].temperature,2);
+		OLED_ShowInt32(&oled,3,5,esc_status[ESC1_Index].rpm);
 		
         // 200HZ
         osDelay(20);

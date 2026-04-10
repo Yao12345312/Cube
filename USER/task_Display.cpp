@@ -16,7 +16,7 @@ void StartDisplayTask(void *argument){
 	while(1)
 	{
 	
-	osDelay(1000);
+	osDelay(100);
 	}
 
 }

@@ -141,8 +141,8 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 
     if (!uavcan_equipment_esc_CubeStatus_decode(transfer, &msg))
     {
-        // 解析成功
-        uint8_t esc_id = msg.esc_index;
+        // 解析成功,电调ID从[1,3]映射为[0,2]
+        uint8_t esc_id = msg.esc_index - 1;
 
         float voltage = msg.voltage;
         float current = msg.current;
@@ -284,8 +284,8 @@ void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
 {	
 
     // 转速限幅
-    if (rpm >  3000) rpm = 3000;
-    if (rpm < -3000) rpm = -3000;
+    if (rpm >  8000) rpm = 8000;
+    if (rpm < -8000) rpm = -8000;
 	
     struct uavcan_equipment_esc_CubeRPMCommand msg = {0};
 	//设置命令数量
@@ -295,11 +295,7 @@ void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
     for (uint8_t i = 0; i < msg.rpm.len; i++)
     {
 		//解锁电调
-		if(!esc_arm_flag)
-		{
 		msg.arm = 1;
-		esc_arm_flag = true;	
-		}
 		
 		msg.rpm.data[i] = (i == esc_index) ? rpm : 0;
     }

@@ -4,9 +4,9 @@
 
 // LQR 增益(MATLAB参数离线计算获得）
 static float K[3] = {
-    15.0f,   // k_theta
-    1.5f,    // k_theta_dot
-    0.02f    // k_wheel_speed
+    -3319.0f,   // k_theta
+    -541.0f,    // k_theta_dot
+    -1.41f    // k_wheel_speed
 };
 
 //rpm → rad/s
@@ -28,9 +28,6 @@ float LQR_Compute(float theta, float theta_dot, float wheel_rpm)
     // LQR 控制律 u = -Kx
     float u = -(K[0]*x1 + K[1]*x2 + K[2]*x3);
 	
-	//电调输出限幅
-	if (u > 1.0f) return 1.0f;
-    if (u < -1.0f) return -1.0f;
     return u;
 
 }
