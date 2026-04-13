@@ -31,13 +31,9 @@ void StartControlTask(void *argument)
     auto& imu = Board::getImu();
     auto& mag = Board::getQMC5883P();
     auto& led = Board::getLedPwm();
-	auto& oled = Board::getOled();
 	auto& uavcan = Board::getCan();
 	auto& esc_node = Board::getESCNode();
 	auto& ina226 = Board::getINA226();
-	
-	//开启OLED显示
-	OLED_Display_On(&oled);
 	
     // 传感器数据变量
     float ax, ay, az;
@@ -49,7 +45,7 @@ void StartControlTask(void *argument)
 	float ex, ey, ez;
 	
 	//获取电调状态
-	ESCNode::ESCStatusCache esc_status[3]={0};
+	ESCNode::ESCStatusCache esc_status[Max_ESC_Num]={0};
 	int32_t esc_output = 0;
 	int32_t esc_last_output = 0;
 	
@@ -85,21 +81,17 @@ void StartControlTask(void *argument)
             (float)magData.z
         );
         
-        ahrs.getEuler(roll,pitch,yaw);
-		
-		ahrs.getAttitudeError(ex, ey, ez);
-		
+        ahrs.getEulerRad(roll,pitch,yaw);
+					
 		esc_node.send_node_status();	
-
-		esc_node.spin_once();
-				
+	
 		//获取电调转速
 		if(esc_node.get_esc_status(ESC1_Index,esc_status[ESC1_Index]))
 		{	
 			//LQR输出计算
-			esc_output= LQR_Compute(ex, gx * DEG_TO_RAD, esc_status[ESC1_Index].rpm);
+			esc_output= LQR_Compute(roll, gx * DEG_TO_RAD, esc_status[ESC1_Index].rpm);
 			
-			if(esc_status[ESC1_Index].calib_flag == 1 && esc_output !=esc_last_output)	
+			if(esc_status[ESC1_Index].calib_flag == 1 && esc_output != esc_last_output)	
 			{
 				esc_node.send_esc_rpm_commmand(ESC1_Index,300);		
 				
@@ -116,17 +108,10 @@ void StartControlTask(void *argument)
 
 		}
 		
-		OLED_ShowString(&oled, 0, 0,"vol:");
-		OLED_ShowString(&oled, 1, 0,"cal:");
-		OLED_ShowString(&oled, 2, 0,"tmp:");
-		OLED_ShowString(&oled, 3, 0,"rpm:");
+		esc_node.spin_once();
 		
-		OLED_ShowFloat(&oled,0,5,esc_status[ESC1_Index].voltage,2);	
-		OLED_ShowFloat(&oled,1,5,esc_status[ESC1_Index].calib_flag,2);
-		OLED_ShowFloat(&oled,2,5,esc_status[ESC1_Index].temperature,2);
-		OLED_ShowInt32(&oled,3,5,esc_status[ESC1_Index].rpm);
-		
+		//printf("esc_output:%d ", esc_output);
         // 200HZ
-        osDelay(20);
+        osDelay(5);
     }
 }

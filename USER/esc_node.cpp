@@ -160,7 +160,7 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
         //存储电调状态
         if (esc_id < 3)
 		{	
-			//osMutexAcquire(self->m_esc_get_staus_mutex, osWaitForever);
+			osMutexAcquire(self->m_esc_get_staus_mutex, osWaitForever);
 			
 			self->esc_status_[esc_id].rpm = rpm;
 			self->esc_status_[esc_id].voltage = voltage;
@@ -168,7 +168,7 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 			self->esc_status_[esc_id].temperature = temperature;
 			self->esc_status_[esc_id].calib_flag=calib_flag;
 			
-			//osMutexRelease(self->m_esc_get_staus_mutex);
+			osMutexRelease(self->m_esc_get_staus_mutex);
 		}
     }
 	
@@ -232,7 +232,7 @@ void ESCNode::set_esc_index_command(uint8_t target_esc_index)
 	//序列化失败
 	if(size == 0){return;}
 	
-	//osMutexAcquire(m_send_mutex, osWaitForever);
+	osMutexAcquire(m_send_mutex, osWaitForever);
 	
     canardBroadcast(&canard_,
                    UAVCAN_EQUIPMENT_ESC_CUBESETID_SIGNATURE,
@@ -244,7 +244,7 @@ void ESCNode::set_esc_index_command(uint8_t target_esc_index)
 	
 	esc_index_transfer_id_++;
 	
-	//osMutexRelease(m_send_mutex);
+	osMutexRelease(m_send_mutex);
 }
 //电调校准命令
 void ESCNode::calib_esc_command(uint8_t target_esc_index)
@@ -263,7 +263,7 @@ void ESCNode::calib_esc_command(uint8_t target_esc_index)
 	//序列化失败
 	if(size == 0){return;}
 	
-	//osMutexAcquire(m_send_mutex, osWaitForever);
+	osMutexAcquire(m_send_mutex, osWaitForever);
 	
     canardBroadcast(&canard_,
                     UAVCAN_EQUIPMENT_ESC_CUBECALIBCOMMAND_SIGNATURE,
@@ -275,7 +275,7 @@ void ESCNode::calib_esc_command(uint8_t target_esc_index)
 	
 	calib_esc_transfer_id_++;
 	
-	//osMutexRelease(m_send_mutex);
+	osMutexRelease(m_send_mutex);
 }
 
 
@@ -308,7 +308,7 @@ void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
 	//序列化失败
 	if(size == 0){return;}
 	
-	//osMutexAcquire(m_send_mutex, osWaitForever);
+	osMutexAcquire(m_send_mutex, osWaitForever);
 	
     canardBroadcast(&canard_,
                     UAVCAN_EQUIPMENT_ESC_CUBERPMCOMMAND_SIGNATURE,
@@ -320,7 +320,7 @@ void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
 	
 	esc_rpm_commmand_transfer_id_++;
 	
-	//osMutexRelease(m_send_mutex);
+	osMutexRelease(m_send_mutex);
 }
 //获取电调状态
 bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
@@ -328,11 +328,11 @@ bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
 	if (esc_index >= Max_ESC_Num)
       return false;
 	
-	//osMutexAcquire(m_esc_get_staus_mutex, osWaitForever);
+	osMutexAcquire(m_esc_get_staus_mutex, osWaitForever);
 
     out = esc_status_[esc_index];
 	
-	//osMutexRelease(m_esc_get_staus_mutex);
+	osMutexRelease(m_esc_get_staus_mutex);
 	
     return true;
 	

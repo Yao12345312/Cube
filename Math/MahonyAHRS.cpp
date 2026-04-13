@@ -121,29 +121,6 @@ void MahonyAHRS::getQuaternion(float &w, float &x, float &y, float &z)
     z = q3;
 }
 
-void MahonyAHRS::getAttitudeError(float &ex, float &ey, float &ez)
-{
-    // 当前姿态 q = [q0, q1, q2, q3]
-    // 目标姿态 qd = [1, 0, 0, 0]
-
-    // 小角度近似(LQR控制线性化要求前提）
-    ex = 2.0f * q1;
-    ey = 2.0f * q2;
-    ez = 2.0f * q3;
-
-    //误差限幅，在可近似线性化范围内
-    const float limit = 0.5f; // ≈ 30°
-    
-    if (ex > limit) ex = limit;
-    if (ex < -limit) ex = -limit;
-
-    if (ey > limit) ey = limit;
-    if (ey < -limit) ey = -limit;
-
-    if (ez > limit) ez = limit;
-    if (ez < -limit) ez = -limit;
-}
-
 
 void MahonyAHRS::getEuler(float &roll, float &pitch, float &yaw)
 {
@@ -154,4 +131,12 @@ void MahonyAHRS::getEuler(float &roll, float &pitch, float &yaw)
     roll  *= 57.29578f;
     pitch *= 57.29578f;
     yaw   *= 57.29578f;
+}
+
+void MahonyAHRS::getEulerRad(float &roll, float &pitch, float &yaw)
+{
+    roll  = atan2f(2*(q0*q1 + q2*q3), 1 - 2*(q1*q1 + q2*q2));
+    pitch = asinf(2*(q0*q2 - q3*q1));
+    yaw   = atan2f(2*(q0*q3 + q1*q2), 1 - 2*(q2*q2 + q3*q3));
+
 }

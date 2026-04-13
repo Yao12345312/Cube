@@ -15,7 +15,7 @@ public:
                 float mx, float my, float mz);
 
     void getEuler(float &roll, float &pitch, float &yaw);
-	void getAttitudeError(float &ex, float &ey, float &ez);
+	void getEulerRad(float &roll, float &pitch, float &yaw);
 	void getQuaternion(float &w, float &x, float &y, float &z);			
 				
 private:
