@@ -22,10 +22,12 @@ extern "C" {
 #define KEY3_PIN  GPIO_PIN_5
 
 //OLED模块引脚定义
-#define OLED_DC_Port GPIOE
-#define OLED_DC_Pin GPIO_PIN_12
-#define OLED_RST_Port GPIOE	
-#define OLED_RST_Pin GPIO_PIN_15	
+#define OLED_CS_PORT GPIOB	
+#define OLED_CS_PIN GPIO_PIN_14	
+#define OLED_DC_PORT GPIOE
+#define OLED_DC_PIN GPIO_PIN_12
+#define OLED_RST_PORT GPIOE	
+#define OLED_RST_PIN GPIO_PIN_15	
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
@@ -165,12 +167,6 @@ namespace Board {
      */
 	ESCNode& getESCNode();
 	
-    /**
-     * @brief 获取OLED设备实例
-     * @return oled_dev_t结构体的引用
-     */
-    oled_dev_t& getOled();
-    
     /**
      * @brief 获取蓝牙驱动实例
      * @return BluetoothDriver对象的引用

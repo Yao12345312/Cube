@@ -39,7 +39,7 @@ void ESCNode::spin_once()
 {	
 	//每次最多发送1帧
     can_driver_.process_tx(5);
-    can_driver_.process_rx(5);
+    can_driver_.process_rx(64);
 }
 //处理接收到的信息
 void ESCNode::onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
@@ -142,7 +142,7 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
     if (!uavcan_equipment_esc_CubeStatus_decode(transfer, &msg))
     {
         // 解析成功,电调ID从[1,3]映射为[0,2]
-        uint8_t esc_id = msg.esc_index - 1;
+        uint8_t esc_id = (msg.esc_index - 1);
 
         float voltage = msg.voltage;
         float current = msg.current;
@@ -154,11 +154,11 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 		
 		bool calib_flag = msg.calib_done;
 		
-        printf("ESC[%d]: rpm=%ld, V=%.2f, I=%.2f, T=%.2f\n",
-               esc_id, rpm, voltage, current, temperature);
+//      printf("ESC[%d]: rpm=%ld, V=%.2f, I=%.2f, T=%.2f\n",
+//               esc_id, rpm, voltage, current, temperature);
 
         //存储电调状态
-        if (esc_id < 3)
+        if (esc_id < Max_ESC_Num)
 		{	
 			osMutexAcquire(self->m_esc_get_staus_mutex, osWaitForever);
 			
@@ -325,7 +325,7 @@ void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
 //获取电调状态
 bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
 {	
-	if (esc_index >= Max_ESC_Num)
+	if (esc_index > Max_ESC_Num)
       return false;
 	
 	osMutexAcquire(m_esc_get_staus_mutex, osWaitForever);

@@ -30,13 +30,13 @@ LittleFS::LittleFS(SD_HandleTypeDef* hsd)
 
     memset(&m_cfg, 0, sizeof(m_cfg));
     m_cfg.context = this;
-
+	
     /* LittleFS 回调 */
     m_cfg.read  = block_read;
     m_cfg.prog  = block_write;
     m_cfg.erase = block_erase;
     m_cfg.sync  = block_sync;
-
+	
     /* 文件系统参数 */
     m_cfg.read_size      = LFS_BLOCK_SIZE;
     m_cfg.prog_size      = LFS_BLOCK_SIZE;
@@ -48,9 +48,9 @@ LittleFS::LittleFS(SD_HandleTypeDef* hsd)
 }
 
 bool LittleFS::mount()
-{
+{	
     osMutexAcquire(m_mutex, osWaitForever);
-
+	
     int ret = lfs_mount(&m_lfs, &m_cfg);
     if (ret)
     {

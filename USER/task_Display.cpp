@@ -1,44 +1,97 @@
 #include "task_Display.hpp"
+#include "MAVLink_bridge.hpp"
 #include "board.hpp"
-
-// ¶¨ÒåÈÎÎñ¾ä±ú
+#include "menu.hpp"
+extern u8g2_t u8g2;
+// å®šä¹‰ä»»åŠ¡å¥æŸ„
 osThreadId_t DisplayTaskHandle = NULL;
 
-// ¶¨ÒåÈÎÎñÊôĞÔ
+//å®šä¹‰ä»»åŠ¡å±æ€§
 const osThreadAttr_t DisplayTask_attributes = {
     .name = "ControlTask",
-    .stack_size = 2*1024,      // ÏÔÊ¾ÈÎÎñÕ»´óĞ¡
-    .priority = (osPriority_t) osPriorityNormal,  // ÏÔÊ¾ÈÎÎñÄ¬ÈÏÓÅÏÈ¼¶
+    .stack_size = 8*1024,      //ä»»åŠ¡æ ˆå¤§å°
+    .priority = (osPriority_t) osPriorityNormal,  // ä»»åŠ¡ä¼˜å…ˆçº§
 };
 
 void StartDisplayTask(void *argument){
 	
-	auto& oled = Board::getOled();
+	auto& key1 = Board::getKey1();
+	auto& key2 = Board::getKey2();
+	auto& key3 = Board::getKey3();
 	auto& uavcan = Board::getCan();
 	auto& esc_node = Board::getESCNode();
+	auto& ina226 = Board::getINA226();
+	auto& led =Board::getLedPwm();
 	
-	//¿ªÆôOLEDÏÔÊ¾
-	OLED_Display_On(&oled);
+	ESCNode::ESCStatusCache esc_status[Max_ESC_Num]={0};	
 	
-	ESCNode::ESCStatusCache esc_status[Max_ESC_Num]={0};
+	INA226::bat_state bat_status;
 	
-	while(1)
-	{
+	MenuState main_menu_flag = MenuState::MAIN_PAGE_STATE;
+	//æ¸…ç©ºç¼“å†²åŒº
+	OLED_Clear();
 	
-		esc_node.get_esc_status(ESC1_Index,esc_status[ESC1_Index]);
-		
-		OLED_ShowString(&oled, 0, 0,"vol:");
-		OLED_ShowString(&oled, 1, 0,"idx:");
-		OLED_ShowString(&oled, 2, 0,"tmp:");
-		OLED_ShowString(&oled, 3, 0,"rpm:");
-		
-		OLED_ShowFloat(&oled,0,5,esc_status[ESC1_Index].voltage,2);	
-		OLED_ShowFloat(&oled,1,5,esc_status[ESC1_Index].calib_flag,2);
-		OLED_ShowFloat(&oled,2,5,esc_status[ESC1_Index].temperature-273.15f,2);
-		OLED_ShowInt32(&oled,3,5,esc_status[ESC1_Index].rpm);
-		
-		
 	osDelay(100);
+	//æ˜¾ç¤ºLOGO
+	OLED_DisplayLogo();
+	//æ›´æ–°æ˜¾ç¤º
+	OLED_Update();
+	
+	osDelay(2000);
+
+	while(1)
+	{	
+		//æ¸…ç©ºç¼“å†²åŒº
+		OLED_Clear();
+	
+		//è·å–æŒ‰é”®çŠ¶æ€
+		key1.update();
+		key2.update();
+		key3.update();
+		
+		//è·å–ç”µæ± çŠ¶æ€
+		bat_status = ina226.INA226_get_bat_status(ina226.INA226_ReadBusVoltage());
+		
+		if(main_menu_flag == MenuState::MAIN_PAGE_STATE)
+			
+		{	
+	
+			if(MAVLink::get_mavlink_connect_status())
+			{
+				led.setRGBBlink(0,100,0,1);
+				OLED_ShowBLEON();
+				if(bat_status == INA226::bat_state::BAT_FULL_POWER)
+					OLED_Fullbattery();
+				if(bat_status == INA226::bat_state::BAT_HIGH_POWER)
+					OLED_Highbattery();
+				if(bat_status == INA226::bat_state::BAT_MID_POWER)
+					OLED_Middlebattery;
+				if(bat_status == INA226::bat_state::BAT_LOW_POWER)
+					OLED_Lowbattery();
+			}
+			else
+			{
+				led.setRGBBlink(100,0,0,1);
+				OLED_ShowBLEOFF();
+				if(bat_status == INA226::bat_state::BAT_FULL_POWER)
+					OLED_Fullbattery();
+				if(bat_status == INA226::bat_state::BAT_HIGH_POWER)
+					OLED_Highbattery();
+				if(bat_status == INA226::bat_state::BAT_MID_POWER)
+					OLED_Middlebattery;
+				if(bat_status == INA226::bat_state::BAT_LOW_POWER)
+					OLED_Lowbattery();
+			}
+			
+		}
+		
+		OLED_ShowChinese(0 ,32 ,"ä¸­æ–‡æ˜¾ç¤º");
+		OLED_ShowChinese(0 ,46 ,"ä¸­æ–‡æ˜¾ç¤º");
+		OLED_DrawRectangle(0 , 32, 120,15,0);
+		
+		OLED_Update();
+		
+		osDelay(200);
 	}
 
 }

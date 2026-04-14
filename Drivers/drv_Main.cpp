@@ -50,7 +50,7 @@ void init_drv_Main(void)
 	
   MX_USB_DEVICE_Init();
   //等待各模块稳定
-  osDelay(3000);
+  osDelay(2000);
   //驱动对象初始化
   if (!Board::init()) {
         Error_Handler();

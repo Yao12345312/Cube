@@ -9,7 +9,8 @@
 #define ESC1_Index 0
 #define ESC2_Index 1
 #define ESC3_Index 2
-#define Max_ESC_Num 3
+#define ESC4_Index 3
+#define Max_ESC_Num 4
 
 class ESCNode
 {

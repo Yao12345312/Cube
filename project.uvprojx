@@ -409,6 +409,11 @@
               <FilePath>.\USER\esc_node.cpp</FilePath>
             </File>
             <File>
+              <FileName>menu.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\USER\menu.cpp</FilePath>
+            </File>
+            <File>
               <FileName>stm32h7xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\USER\stm32h7xx_it.c</FilePath>

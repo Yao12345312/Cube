@@ -77,8 +77,6 @@ void StartCommunicationTask(void *argument)
     // 获取硬件访问接口
     auto& bluetooth = Board::getBluetooth();
     auto& uart = Board::getUart1();
-	auto& led =Board::getLedPwm();
-	auto& oled=Board::getOled();
 	auto& buzzer=Board::getBuzzer();
 	auto& esc_node = Board::getESCNode();
 	
@@ -98,8 +96,7 @@ void StartCommunicationTask(void *argument)
 //    uint32_t now;
 //	
 //	float bat_vel;
-//	//MAVLink未连接状态，设置红灯1HZ闪烁
-	led.setRGBBlink(50,0,0,1);
+
 
     while (1) {
 	

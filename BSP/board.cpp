@@ -4,6 +4,8 @@ extern "C" {
     void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim);
 }
 
+extern u8g2_t u8g2;
+
 // ==================== HAL句柄定义（全局，由CubeMX生成） ==================== 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
@@ -176,26 +178,6 @@ private:
     ESCNodeWrapper() = default;
 };
 
-//OLED设备
-class OledDevWrapper {
-public:
-    static oled_dev_t& getInstance() {
-        static oled_dev_t instance = {
-            .spi = &hspi2,
-            .dc_port = OLED_DC_Port,
-            .dc_pin = OLED_DC_Pin,
-            .rst_port = OLED_RST_Port,
-            .rst_pin = OLED_RST_Pin
-        };
-        return instance;
-    }
-    
-    OledDevWrapper(const OledDevWrapper&) = delete;
-    OledDevWrapper& operator=(const OledDevWrapper&) = delete;
-    
-private:
-    OledDevWrapper() = default;
-};
 
 //按键对象（全局）
 Key key1(KEY1_Port, KEY1_PIN, Key::ActiveLevel::High, 2000, 20);
@@ -252,9 +234,13 @@ public:
         }
         
         //初始化OLED硬件
-        OLED_Hw_Init(&OledDevWrapper::getInstance());
-        OLED_Init(&OledDevWrapper::getInstance());
-        
+		OLED_Init();
+		u8g2_Init_Display(&u8g2);
+    
+		// 清屏
+		OLED_Clear();
+        OLED_Update();
+		
         //初始化IMU
         if (Bmi088Wrapper::getInstance().init() != BMI08_OK) {
             printf("IMU init failed!\r\n");
@@ -318,9 +304,7 @@ namespace Board {
 	SPA06& getBaro() {return SPA06Wrapper::getInstance();}
 	
     UavcanCanDriver& getCan() { return UavcanCanDriverWrapper::getInstance(); }
-	
-    oled_dev_t& getOled() { return OledDevWrapper::getInstance(); }
-	
+		
     BluetoothDriver& getBluetooth() { return BluetoothDriverWrapper::getInstance(); }
 	
 	ESCNode& getESCNode() { return ESCNodeWrapper::getInstance(); }
@@ -353,6 +337,7 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  
   //片选引脚初始化先拉高
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
@@ -373,8 +358,15 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  
+      /*Configure GPIO pin : PB14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
   
     /*Configure GPIO pin : PE0 */
   GPIO_InitStruct.Pin = GPIO_PIN_0;
@@ -559,9 +551,9 @@ void MX_SPI2_Init(void)
   /* SPI2 parameter configuration*/
   hspi2.Instance = SPI2;
   hspi2.Init.Mode = SPI_MODE_MASTER;
-  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.Direction = SPI_DIRECTION_1LINE;
   hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
   hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;

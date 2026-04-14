@@ -54,10 +54,9 @@ void StartControlTask(void *argument)
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
 	
 	//电调初始化
-	esc_node.set_esc_index_command((ESC1_Index + 1));
-	
-	
-	esc_node.spin_once();
+//	esc_node.set_esc_index_command((ESC3_Index + 1));
+//	
+//	esc_node.spin_once();
 	
     while (1) {
         // 控制任务主循环
@@ -83,27 +82,23 @@ void StartControlTask(void *argument)
         
         ahrs.getEulerRad(roll,pitch,yaw);
 					
-		esc_node.send_node_status();	
-	
+		//esc_node.send_node_status();	
+
 		//获取电调转速
-		if(esc_node.get_esc_status(ESC1_Index,esc_status[ESC1_Index]))
+		if(esc_node.get_esc_status(ESC3_Index,esc_status[ESC3_Index]))
 		{	
 			//LQR输出计算
-			esc_output= LQR_Compute(roll, gx * DEG_TO_RAD, esc_status[ESC1_Index].rpm);
+			esc_output= LQR_Compute(roll, gx * DEG_TO_RAD, esc_status[ESC3_Index].rpm);
 			
-			if(esc_status[ESC1_Index].calib_flag == 1 && esc_output != esc_last_output)	
+			if(esc_status[ESC3_Index].calib_flag == 1 && esc_output != esc_last_output)	
 			{
-				esc_node.send_esc_rpm_commmand(ESC1_Index,300);		
+				esc_node.send_esc_rpm_commmand(ESC3_Index,300);		
 				
 				esc_last_output = esc_output;
 			}
-			else if(esc_status[ESC1_Index].calib_flag == 1 && ina226.INA226_get_bat_status(ina226.INA226_ReadBusVoltage()))
-			{
-				
-			}
 			else
 			{
-				esc_node.calib_esc_command((ESC1_Index + 1));
+				esc_node.calib_esc_command((ESC3_Index + 1));
 			}
 
 		}

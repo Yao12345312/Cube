@@ -51,10 +51,22 @@ float INA226::INA226_ReadBusVoltage(void)
  * @brief 判断电池状态是否健康
  * @return 电池健康状态标志
  */
-bool INA226::INA226_get_bat_status(float bat_vel)
-{
-	if(bat_vel < BatCellsNum::CELLS_3S *LOW_POWER_VEL )
-		return false;
-	else{return true;}
-
+INA226::bat_state INA226::INA226_get_bat_status(float bat_vel)
+{	
+	//获取电池串联数
+	uint32_t cells = static_cast<uint32_t>(BatCellsNum::CELLS_4S);
+	
+	if(bat_vel <cells * LOW_POWER_VEL)
+		return bat_state::BAT_LOW_POWER;
+	
+	if(bat_vel <cells * MID_POWER_VEL)
+		return bat_state::BAT_MID_POWER;
+			
+	if(bat_vel <cells * HIGH_POWER_VEL)
+		return bat_state::BAT_HIGH_POWER;
+	
+	if(bat_vel <cells * FULL_POWER_VEL)
+		return bat_state::BAT_FULL_POWER;	
+	
+	return bat_state::BAT_MESSURE_ERR;
 }
