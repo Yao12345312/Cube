@@ -180,9 +180,9 @@ private:
 
 
 //按键对象（全局）
-Key key1(KEY1_Port, KEY1_PIN, Key::ActiveLevel::High, 2000, 20);
-Key key2(KEY2_Port, KEY2_PIN, Key::ActiveLevel::High, 2000, 20);
-Key key3(KEY3_Port, KEY3_PIN, Key::ActiveLevel::High, 2000, 20);
+Key key1(KEY1_Port, KEY1_PIN, Key::ActiveLevel::High, 1000, 20);
+Key key2(KEY2_Port, KEY2_PIN, Key::ActiveLevel::High, 1000, 20);
+Key key3(KEY3_Port, KEY3_PIN, Key::ActiveLevel::High, 1000, 20);
 
 //蓝牙驱动
 class BluetoothDriverWrapper {
@@ -335,7 +335,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : PE3 PE4 PE5 */
   GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
   
   //片选引脚初始化先拉高

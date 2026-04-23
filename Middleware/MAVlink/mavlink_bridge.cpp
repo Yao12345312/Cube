@@ -92,8 +92,7 @@ namespace MAVLink {
                         }
                         break;
                     }
-                    
-				   
+
                     default:
                         // 其他消息可以忽略或根据需要添加处理
                         break;

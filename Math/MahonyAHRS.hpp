@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include "attitute.hpp"
 
 #define DEG_TO_RAD 0.01745329
 
@@ -13,6 +14,15 @@ public:
     void update(float gx, float gy, float gz,
                 float ax, float ay, float az,
                 float mx, float my, float mz);
+	
+	typedef struct
+	{
+		float roll;
+		float pitch;
+		float yaw;
+	} Attitude_t;
+
+	Attitude_t g_attitude;
 
     void getEuler(float &roll, float &pitch, float &yaw);
 	void getEulerRad(float &roll, float &pitch, float &yaw);

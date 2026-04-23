@@ -13,22 +13,19 @@ MahonyAHRS::MahonyAHRS(float freq, float kp, float ki)
     integralFBx = integralFBy = integralFBz = 0.0f;
 }
 
-//快速平方根倒数
-float MahonyAHRS::invSqrt(float x)
+//平方根倒数
+inline float MahonyAHRS::invSqrt(float x)
 {
-    float halfx = 0.5f * x;
-    float y = x;
-    long i = *(long*)&y;
-    i = 0x5f3759df - (i >> 1);
-    y = *(float*)&i;
-    y = y * (1.5f - (halfx * y * y));
-    return y;
+    float inv = 1.0f / sqrtf(x);
+	
+	return inv;
 }
 
 void MahonyAHRS::update(float gx, float gy, float gz,
                         float ax, float ay, float az,
                         float mx, float my, float mz)
-{
+{	
+	
     float recipNorm;
     float hx, hy, bx, bz;
     float vx, vy, vz, wx, wy, wz;
@@ -74,9 +71,9 @@ void MahonyAHRS::update(float gx, float gy, float gz,
 	wz = 2.0f*bx*(q0*q2 + q1*q3) + 2.0f*bz*(0.5f - q1*q1 - q2*q2);
 
 	// 误差 (加速度 + 磁力计)
-	ex = (ay*vz - az*vy)  + magWeight_dynamic*(my*wz - mz*wy);
-	ey = (az*vx - ax*vz)  + magWeight_dynamic*(mz*wx - mx*wz);
-	ez = (ax*vy - ay*vx ) + magWeight_dynamic*(mx*wy - my*wx);
+	ex = (ay*vz - az*vy);
+	ey = (az*vx - ax*vz);
+	ez = (ax*vy - ay*vx );
 	//z轴积分限幅
 	if (fabsf(ez) > 0.2f)
     ez = 0;
@@ -110,7 +107,7 @@ void MahonyAHRS::update(float gx, float gy, float gz,
     q2 *= recipNorm;
     q3 *= recipNorm;
 	
-
+	
 }
 
 void MahonyAHRS::getQuaternion(float &w, float &x, float &y, float &z)

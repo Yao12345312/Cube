@@ -23,6 +23,11 @@ Bmi088::Bmi088(SPI_HandleTypeDef *hspi,
     m_gyroCsPin  = gyro_cs_pin;
 
     m_currentDev = 0;
+	//初始化校准变量
+	m_accel_offset[0] = m_accel_offset[1] = m_accel_offset[2] = 0.0f;
+    m_gyro_offset[0] = m_gyro_offset[1] = m_gyro_offset[2] = 0.0f;
+    m_accel_calibrated = false;
+    m_gyro_calibrated = false;
 }
 
 /* ================= getDev ================= */
@@ -185,6 +190,7 @@ float Bmi088::getGyroSensitivity()
     return sensitivity;
 }
 
+
 int8_t Bmi088::getAccelData(float &accel_x, float &accel_y, float &accel_z)
 {
     int8_t rslt;
@@ -196,7 +202,7 @@ int8_t Bmi088::getAccelData(float &accel_x, float &accel_y, float &accel_z)
     
     if (rslt == BMI08_OK) {
         float sensitivity = getAccelSensitivity();
-        float g_to_ms2 = 9.80665f;  // 重力加速度转换因子
+        float g_to_ms2 = 9.7986f;  // 重力加速度转换因子
         
         // 将原始数据转换为g，然后转换为m/s2
         accel_x = (float)accel_data.x / sensitivity * g_to_ms2;
@@ -228,6 +234,210 @@ int8_t Bmi088::getGyroData(float &gyro_x, float &gyro_y, float &gyro_z)
     }
     
     return rslt;
+}
+/* ================= 加速度计静态校准函数 ================= */
+int8_t Bmi088::calibrateAccelStatic()
+{
+    const float ACC_NORM_THRESHOLD = 0.3f;   // |a|-g 允许误差 (m/s^2)
+    const uint16_t REQUIRED_COUNT = 1000;
+    const uint32_t TIMEOUT = 10000;
+
+    const float g = 9.7986f;
+
+    float ax, ay, az;
+    float sum_x = 0, sum_y = 0, sum_z = 0;
+
+    uint16_t count = 0;
+    uint32_t time_ms = 0;
+
+    printf("Accel calibration start...\n");
+
+    while (1)
+    {
+        if (getAccelData(ax, ay, az) == BMI08_OK)
+        {
+            float norm = sqrtf(ax*ax + ay*ay + az*az);
+
+            //静止检测
+            if (fabs(norm - g) < ACC_NORM_THRESHOLD)
+            {
+                count++;
+
+                sum_x += ax;
+                sum_y += ay;
+                sum_z += az;
+
+                if (count >= REQUIRED_COUNT)
+                {
+                    float mean_x = sum_x / count;
+                    float mean_y = sum_y / count;
+                    float mean_z = sum_z / count;
+
+                    //关键：根据当前姿态计算理论重力
+
+                    float gx = 0.0f;
+                    float gy = 0.0f;
+                    float gz = -g;
+
+                    //bias = 测量值 - 理论值
+                    m_accel_offset[0] = mean_x - gx;
+                    m_accel_offset[1] = mean_y - gy;
+                    m_accel_offset[2] = mean_z - gz;
+
+                    m_accel_calibrated = true;
+
+                    printf("Accel cal success:\n");
+                    printf("bias x: %.6f\n", m_accel_offset[0]);
+                    printf("bias y: %.6f\n", m_accel_offset[1]);
+                    printf("bias z: %.6f\n", m_accel_offset[2]);
+
+                    return 0;
+                }
+            }
+            else
+            {
+                //不稳定 → 清空
+                count = 0;
+                sum_x = sum_y = sum_z = 0;
+
+                if (time_ms % 200 == 0)
+                {
+                    printf("Keep IMU static!\n");
+                }
+            }
+        }
+
+        osDelay(1);
+        time_ms++;
+
+        if (time_ms > TIMEOUT)
+        {
+            printf("Accel calibration timeout!\n");
+            return -1;
+        }
+    }
+}
+
+/* ================= 获取校准零偏后的加速度计数据 ================= */
+int8_t Bmi088::getAccelDataCalibrated(float &accel_x, float &accel_y, float &accel_z)
+{
+    int8_t rslt = getAccelData(accel_x, accel_y, accel_z);
+    
+    if (rslt == BMI08_OK && m_accel_calibrated) {
+        accel_x -= m_accel_offset[0];
+        accel_y -= m_accel_offset[1];
+        accel_z -= m_accel_offset[2];
+    }
+    
+    return rslt;
+}
+
+/* ================= 陀螺仪静态校准函数 ================= */
+int8_t Bmi088::calibrateGyroStatic()
+{
+    const float GYRO_THRESHOLD = 3.0f;   // deg/s，静止判定阈值
+    const uint16_t REQUIRED_COUNT = 1500; // 连续稳定次数
+    const uint32_t TIMEOUT = 100000;       // 10s
+
+    float gx, gy, gz;
+    float sum_x = 0, sum_y = 0, sum_z = 0;
+
+    uint16_t count = 0;
+    uint32_t time_ms = 0;
+
+    printf("Gyro calibration start...\n");
+
+    while (1)
+    {
+        if (getGyroData(gx, gy, gz) == BMI08_OK)
+			{	
+			// printf("gx:%.4f,gy:%.4f,gz:%.4f\n",gx,gy,gz);		
+            //静止检测
+            if (fabs(gx) < GYRO_THRESHOLD &&
+                fabs(gy) < GYRO_THRESHOLD &&
+                fabs(gz) < GYRO_THRESHOLD)
+            {
+                count++;
+
+                sum_x += gx;
+                sum_y += gy;
+                sum_z += gz;
+
+                // 连续稳定成功
+                if (count >= REQUIRED_COUNT)
+                {
+                    m_gyro_offset[0] = sum_x / count;
+                    m_gyro_offset[1] = sum_y / count;
+                    m_gyro_offset[2] = sum_z / count;
+
+                    m_gyro_calibrated = true;
+
+                    printf("Gyro cal success:\n");
+                    printf("gx: %.6f rad/s\n", m_gyro_offset[0]);
+                    printf("gy: %.6f rad/s\n", m_gyro_offset[1]);
+                    printf("gz: %.6f rad/s\n", m_gyro_offset[2]);
+
+                    return 0;
+                }
+            }
+            else
+            {
+                // 有抖动 → 清空重来
+                count = 0;
+                sum_x = sum_y = sum_z = 0;
+
+                if (time_ms % 200 == 0)
+                {
+                    printf("Keep IMU static!\n");
+                }
+            }
+        }
+
+        osDelay(1);
+        time_ms++;
+
+        //  超时保护
+        if (time_ms > TIMEOUT)
+        {
+            printf("Gyro calibration timeout!\n");
+            return -1;
+        }
+    }
+}
+
+/* ================= 获取校准后的陀螺仪数据 ================= */
+int8_t Bmi088::getGyroDataCalibrated(float &gyro_x, float &gyro_y, float &gyro_z)
+{
+    int8_t rslt = getGyroData(gyro_x, gyro_y, gyro_z);
+    
+    if (rslt == BMI08_OK && m_gyro_calibrated) {
+        gyro_x -= m_gyro_offset[0];
+        gyro_y -= m_gyro_offset[1];
+        gyro_z -= m_gyro_offset[2];
+    }
+    
+    return rslt;
+}
+
+int8_t Bmi088::calibrateAllStatic()
+{
+    float accel_off_x, accel_off_y, accel_off_z;
+    float gyro_off_x, gyro_off_y, gyro_off_z;
+    int8_t ret = 0;
+    
+    printf("\n静态校准开始\n");
+    
+    //校准陀螺仪（需要完全静止）
+    if (calibrateGyroStatic()!= 0) {
+        printf("陀螺仪校准失败\n");
+        ret = -1;
+    }
+    
+    osDelay(500);
+    
+    printf("校准完成\n\n");
+    
+    return ret;
 }
 
 

@@ -3,73 +3,87 @@
 #include "board.hpp"
 #include "MahonyAHRS.hpp"
 #include "LQR_control.hpp"
+
+#include <cmath>
 #include <cstdio>
 
-// 定义任务句柄
 osThreadId_t controlTaskHandle = NULL;
 
-// 定义任务属性
 const osThreadAttr_t controlTask_attributes = {
     .name = "ControlTask",
-    .stack_size = 4*1024,      // 控制任务栈大小
-    .priority = (osPriority_t) osPriorityHigh,  // 控制任务优先级较高
+    .stack_size = 4 * 1024,
+    .priority = (osPriority_t)osPriorityHigh,
 };
 
-// 控制任务入口函数
+Attitude_t g_attitude = {0};
+osMutexId_t g_att_mutex = osMutexNew(NULL);
+
+namespace {
+static inline float AngleDiffRad(float a, float b)
+{	
+	//转成单位圆下再取arctan，求最短角度误差,使误差在[-Π,Π]
+    return atan2f(sinf(a - b), cosf(a - b));
+}
+} // namespace
+
+float mechanics_medium = -2.34f;
+const float k_w = 0.00003f;     // 轮速抑制系数
+
 void StartControlTask(void *argument)
 {
-    // 等待系统稳定
     osDelay(100);
-
-    // 打印启动信息
     printf("Control Task Started!\r\n");
-	
-	//AHRS初始化
-	static MahonyAHRS ahrs(250.0f, 2.0f, 0.001f);
-	
-    // 获取硬件访问接口
-    auto& imu = Board::getImu();
-    auto& mag = Board::getQMC5883P();
-    auto& led = Board::getLedPwm();
-	auto& uavcan = Board::getCan();
-	auto& esc_node = Board::getESCNode();
-	auto& ina226 = Board::getINA226();
-	
-    // 传感器数据变量
-    float ax, ay, az;
-    float gx, gy, gz;
+
+    static MahonyAHRS ahrs(500.0f, 2.0f, 0.001f);
+
+    auto &imu = Board::getImu();
+    auto &mag = Board::getQMC5883P();
+    auto &esc_node = Board::getESCNode();
+
+    float ax = 0.0f, ay = 0.0f, az = 0.0f;
+    float gx = 0.0f, gy = 0.0f, gz = 0.0f;
     QMC5883P::MagData magData;
-    float roll, pitch, yaw;	
+    float roll = 0.0f, pitch = 0.0f, yaw = 0.0f;
+	//角速度滤波
+    const float alpha = 1.0f;
+
+    const float max_balance_angle = 0.15f;
+    const float hold_angle = 0.01f;
+    const float hold_rate = 0.05f;
+
+    const float arm_angle = 0.12f;
+    const float arm_rate = 0.8f;
+    const uint32_t arm_count_need = 20U;
+
+    float gx_filtered = 0.0f;
+    float gx_last = 0.0f;
+
+    ESCNode::ESCStatusCache esc_status[Max_ESC_Num] = {0};
+
+    int32_t esc_current_cmd = 0;
+
+    uint32_t log_counter = 0;
+    uint32_t calib_counter = 0;
+    uint32_t arm_counter = 0;
+    bool control_armed = false;
+
+    uint32_t next_wake = osKernelGetTickCount();
 	
-	//获取角度误差
-	float ex, ey, ez;
-	
-	//获取电调状态
-	ESCNode::ESCStatusCache esc_status[Max_ESC_Num]={0};
-	int32_t esc_output = 0;
-	int32_t esc_last_output = 0;
-	
-	static uint64_t last_time = 0;
-	
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
-	
-	//电调初始化
-//	esc_node.set_esc_index_command((ESC3_Index + 1));
-//	
-//	esc_node.spin_once();
+	//IMU零偏校准
+	imu.calibrateAllStatic();
 	
     while (1) {
-        // 控制任务主循环
 
-		//读取IMU数据
-        imu.getAccelData(ax, ay, az);
-        imu.getGyroData(gx, gy, gz);
-        
-        // 读取磁力计数据
+        //AHRS姿态解算
+        imu.getAccelDataCalibrated(ax, ay, az);
+        imu.getGyroDataCalibrated(gx, gy, gz);
+
         mag.readRaw(magData);
         mag.convertMagFrame(magData);
-        
-        // 姿态解算
+
+        gx_filtered = alpha * gx + (1.0f - alpha) * gx_last;
+        gx_last = gx_filtered;
+
         ahrs.update(
             gx * DEG_TO_RAD,
             gy * DEG_TO_RAD,
@@ -77,36 +91,96 @@ void StartControlTask(void *argument)
             ax, ay, az,
             (float)magData.x,
             (float)magData.y,
-            (float)magData.z
-        );
-        
-        ahrs.getEulerRad(roll,pitch,yaw);
+            (float)magData.z);
+
+        ahrs.getEulerRad(roll, pitch, yaw);
+
+        osMutexAcquire(g_att_mutex, osWaitForever);
+        g_attitude.roll = roll;
+        g_attitude.pitch = pitch;
+        g_attitude.yaw = yaw;
+        osMutexRelease(g_att_mutex);
+
+        //CAN收发
+        esc_node.spin_once();
+
+        //获取电调状态
+        esc_node.get_esc_status(ESC1_Index, esc_status[ESC1_Index]);
+
+        const float theta = AngleDiffRad(roll, mechanics_medium);
+        const float theta_dot = gx_filtered * DEG_TO_RAD;
+        const float wheel_speed = (float)esc_status[ESC1_Index].rpm;
+		
+		static float theta_bias = 0.0f;
+		
+		const float bias_gain = 0.00005f;  // 自适应速度
+		
+        //控制逻辑
+
+        // 未校准
+        if (!esc_status[ESC1_Index].calib_flag) {
+            esc_current_cmd = 0;
+            control_armed = false;
+            arm_counter = 0;
+
+            if ((calib_counter++ % 20U) == 0U) {
+                esc_node.calib_esc_command((ESC1_Index + 1));
+            }
+        } else {
+            calib_counter = 0;
+
+            // 未解锁
+            if (!control_armed) {
+                if (fabsf(theta) < arm_angle && fabsf(theta_dot) < arm_rate) {
+                    arm_counter++;
+                } else {
+                    arm_counter = 0;
+                }
+
+                if (arm_counter >= arm_count_need) {
+                    control_armed = true;
+                }
+
+                esc_current_cmd = 0;
+            }
+            // 超范围
+            else if (fabsf(theta) > max_balance_angle) {
+                esc_current_cmd = 0;
+                control_armed = false;
+                arm_counter = 0;
+            }
+            else {
+					// ===== 1. 自适应重心（慢慢修正）=====
+				if (fabsf(theta) < 0.05f &&
+					fabsf(theta_dot) < 0.1f &&
+					fabsf(wheel_speed) < 800.0f)
+					{
+						theta_bias += bias_gain * theta;
+					}
 					
-		//esc_node.send_node_status();	
+					float theta_corr = theta - theta_bias - k_w * wheel_speed;
+					
+					float u = LQR_Compute(theta_corr , theta_dot , wheel_speed);
+					
+					 esc_current_cmd = (int32_t)(u * 100.0f);
+				}
 
-		//获取电调转速
-		if(esc_node.get_esc_status(ESC3_Index,esc_status[ESC3_Index]))
-		{	
-			//LQR输出计算
-			esc_output= LQR_Compute(roll, gx * DEG_TO_RAD, esc_status[ESC3_Index].rpm);
-			
-			if(esc_status[ESC3_Index].calib_flag == 1 && esc_output != esc_last_output)	
-			{
-				esc_node.send_esc_rpm_commmand(ESC3_Index,300);		
-				
-				esc_last_output = esc_output;
-			}
-			else
-			{
-				esc_node.calib_esc_command((ESC3_Index + 1));
-			}
+            //始终发送
+            esc_node.send_esc_rpm_commmand(ESC1_Index, esc_current_cmd);
+        }
 
-		}
-		
-		esc_node.spin_once();
-		
-		//printf("esc_output:%d ", esc_output);
-        // 200HZ
-        osDelay(5);
+        // LOG
+        if ((log_counter++ % 10U) == 0U) {
+            printf("%ld,%ld,%.5f,%.5f,%.5f,%.5f\r\n",
+                   (long)esc_current_cmd,
+                   (long)esc_status[ESC1_Index].rpm,
+                   (float)theta,
+                   (float)theta_dot,
+                   (float)roll,
+				   (float)mechanics_medium);
+        }
+
+        next_wake += 2U;  // 500Hz
+        osDelayUntil(next_wake);
     }
 }

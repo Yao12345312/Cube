@@ -41,7 +41,7 @@ void OLED_DrawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
 void OLED_DrawCircle(int16_t x, int16_t y, uint8_t radius, uint8_t is_filled);
 void OLED_DrawRectangle(int16_t x, int16_t y, uint8_t width, uint8_t height, uint8_t is_filled);
 void OLED_ShowChinese(int16_t x, int16_t y, char *chinese);
-
+void OLED_ShowFloat(uint8_t x, uint8_t y, float num);
 // u8g2»Øµ÷º¯Êý
 uint8_t u8x8_byte_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 uint8_t u8x8_stm32_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);

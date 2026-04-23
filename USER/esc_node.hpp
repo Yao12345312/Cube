@@ -20,6 +20,7 @@ public:
 	struct ESCStatusCache
 	{
 		int32_t rpm;
+		int32_t target_rpm;
 		float voltage;
 		float current;
 		float temperature;

@@ -113,7 +113,7 @@ void StartCommunicationTask(void *argument)
 //	//·¢ËÍÐÄÌø°ü
 //	MAVLink::SendHeartbeat();
 //			
-        osDelay(100);
+        osDelay(50);
     }
 }
 

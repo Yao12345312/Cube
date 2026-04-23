@@ -325,6 +325,22 @@ void OLED_ShowChinese(int16_t x, int16_t y, char *chinese)
     u8g2_DrawUTF8(&u8g2, x + 2, y + 12, chinese);
 }
 
+void OLED_ShowFloat(uint8_t x, uint8_t y, float num)
+{
+    char buf[20];
+
+    int32_t temp = (int32_t)(num * 10000); // 假设4位小数
+
+    int32_t int_part = temp / 10000;
+    int32_t frac_part = temp % 10000;
+
+    if(frac_part < 0) frac_part = -frac_part;
+
+    sprintf(buf, "%ld.%04ld", int_part, frac_part);
+
+    OLED_ShowString(x, y, buf);
+}
+
 /**
  * @brief u8g2 SPI字节传输回调函数
  */

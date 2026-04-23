@@ -16,7 +16,21 @@ void UavcanCanDriver::DWT_Init(void)
 //获取系统时间（us）
 uint64_t UavcanCanDriver::micros64()
 {
-    return DWT->CYCCNT / (SystemCoreClock / 1000000);
+    static uint32_t last = 0;
+    static uint64_t high = 0;
+
+    uint32_t now = DWT->CYCCNT;
+
+    if(now < last) //溢出检测
+    {
+        high += (1ULL << 32);
+    }
+
+    last = now;
+
+    uint64_t full = high | now;
+
+    return full / (SystemCoreClock / 1000000);
 }
 
 bool UavcanCanDriver::init()

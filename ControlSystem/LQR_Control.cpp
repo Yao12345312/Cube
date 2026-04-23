@@ -1,49 +1,43 @@
 #include "LQR_Control.hpp"
+
 #include <cmath>
 #include <stdint.h>
 
-// LQR 增益(MATLAB参数离线计算获得）
-static float K[3] = {
-    -74739.0f,   // k_theta
-    -12162.0f,    // k_theta_dot
-    -3.8280f    // k_wheel_speed
+volatile float K_lqr[3] = {
+    -200.0f,
+    -18.0f,
+    -0.0f
 };
 
-//rpm → rad/s
+namespace {
+
+static constexpr float max_output = 30.0f;
+
 static inline float rpm_to_rad(float rpm)
 {
     return rpm * 2.0f * PI / 60.0f;
 }
 
-static inline float rad_to_rpm(float rad)
+static inline float clampf(float v, float lo, float hi)
 {
-    return rad * 60.0f/(2.0f * PI);
+    if (v > hi) return hi;
+    if (v < lo) return lo;
+    return v;
+}
+} // namespace
+
+void LQR_ResetState(float u_prev_cmd_x100)
+{
+    (void)u_prev_cmd_x100;
 }
 
-//LQR 一阶控制函数
 float LQR_Compute(float theta, float theta_dot, float wheel_rpm)
 {
-    float omega = rpm_to_rad(wheel_rpm);
+    const float omega = rpm_to_rad(wheel_rpm);
 
-    // 状态向量
-    float x1 = theta; //rad
-    float x2 = theta_dot;	//rad/s
-    float x3 = omega;	//rad/s
+    float current_cmd_A = (K_lqr[0] * theta + K_lqr[1] * theta_dot + K_lqr[2] * omega);
 
-    // LQR 控制律 u = -Kx，输出电机电流
-    float omega_target = (K[0]*x1 + K[1]*x2 + K[2]*x3);
-	
-	int32_t rpm_target = static_cast<int32_t> (rad_to_rpm(omega_target));
-	
-    return rpm_target;
-
+	current_cmd_A = clampf(current_cmd_A ,-max_output ,max_output);
+    
+    return current_cmd_A;
 }
-
-
-
-
-
-
-
-
-
