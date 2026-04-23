@@ -46,8 +46,10 @@ void StartDisplayTask(void *argument){
 	//更新显示
 	OLED_Update();
 	
-	osDelay(2000);
-
+	osDelay(1500);
+	
+	uint32_t next_wake = osKernelGetTickCount();
+	
 	while(1)
 	{	
 		//清空缓冲区
@@ -173,7 +175,8 @@ void StartDisplayTask(void *argument){
 		
 		OLED_Update();
 		
-		osDelay(30);
+		next_wake += 30U;  //30Hz
+        osDelayUntil(next_wake);
 	}
 
 }

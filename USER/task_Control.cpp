@@ -21,7 +21,7 @@ osMutexId_t g_att_mutex = osMutexNew(NULL);
 namespace {
 static inline float AngleDiffRad(float a, float b)
 {	
-	//转成单位圆下再取arctan，求最短角度误差,使误差在[-Π,Π]
+	//转成单位圆下再取arctan，求最短角度误差,使误差在[-Π,Π]内
     return atan2f(sinf(a - b), cosf(a - b));
 }
 } // namespace
@@ -44,20 +44,14 @@ void StartControlTask(void *argument)
     float gx = 0.0f, gy = 0.0f, gz = 0.0f;
     QMC5883P::MagData magData;
     float roll = 0.0f, pitch = 0.0f, yaw = 0.0f;
-	//角速度滤波
-    const float alpha = 1.0f;
 
     const float max_balance_angle = 0.15f;
-    const float hold_angle = 0.01f;
-    const float hold_rate = 0.05f;
-
     const float arm_angle = 0.12f;
-    const float arm_rate = 0.8f;
-    const uint32_t arm_count_need = 20U;
-
-    float gx_filtered = 0.0f;
-    float gx_last = 0.0f;
-
+    const float arm_rate = 0.5f;
+    const uint32_t arm_count_need = 50U;
+	
+	const float bias_gain = 0.0001f;  // 自适应速度
+	
     ESCNode::ESCStatusCache esc_status[Max_ESC_Num] = {0};
 
     int32_t esc_current_cmd = 0;
@@ -66,7 +60,8 @@ void StartControlTask(void *argument)
     uint32_t calib_counter = 0;
     uint32_t arm_counter = 0;
     bool control_armed = false;
-
+	
+	//获取系统时间戳
     uint32_t next_wake = osKernelGetTickCount();
 	
 	//IMU零偏校准
@@ -80,10 +75,7 @@ void StartControlTask(void *argument)
 
         mag.readRaw(magData);
         mag.convertMagFrame(magData);
-
-        gx_filtered = alpha * gx + (1.0f - alpha) * gx_last;
-        gx_last = gx_filtered;
-
+		//角度更新
         ahrs.update(
             gx * DEG_TO_RAD,
             gy * DEG_TO_RAD,
@@ -92,7 +84,7 @@ void StartControlTask(void *argument)
             (float)magData.x,
             (float)magData.y,
             (float)magData.z);
-
+		//转发姿态角
         ahrs.getEulerRad(roll, pitch, yaw);
 
         osMutexAcquire(g_att_mutex, osWaitForever);
@@ -108,16 +100,15 @@ void StartControlTask(void *argument)
         esc_node.get_esc_status(ESC1_Index, esc_status[ESC1_Index]);
 
         const float theta = AngleDiffRad(roll, mechanics_medium);
-        const float theta_dot = gx_filtered * DEG_TO_RAD;
+        const float theta_dot = gx * DEG_TO_RAD;
         const float wheel_speed = (float)esc_status[ESC1_Index].rpm;
-		
-		static float theta_bias = 0.0f;
-		
-		const float bias_gain = 0.00005f;  // 自适应速度
-		
-        //控制逻辑
 
-        // 未校准
+		//平衡点角度偏差
+		static float theta_bias = 0.0f;
+
+        //=============================控制逻辑===============================
+
+        // 电调未校准情况下，先校准
         if (!esc_status[ESC1_Index].calib_flag) {
             esc_current_cmd = 0;
             control_armed = false;
@@ -131,26 +122,25 @@ void StartControlTask(void *argument)
 
             // 未解锁
             if (!control_armed) {
+				//姿态稳定在平衡范围内一段时间，解锁
                 if (fabsf(theta) < arm_angle && fabsf(theta_dot) < arm_rate) {
                     arm_counter++;
                 } else {
                     arm_counter = 0;
                 }
-
                 if (arm_counter >= arm_count_need) {
                     control_armed = true;
                 }
-
                 esc_current_cmd = 0;
             }
-            // 超范围
+            // 超范围，关电机
             else if (fabsf(theta) > max_balance_angle) {
                 esc_current_cmd = 0;
                 control_armed = false;
                 arm_counter = 0;
             }
             else {
-					// ===== 1. 自适应重心（慢慢修正）=====
+				//自适应重心
 				if (fabsf(theta) < 0.05f &&
 					fabsf(theta_dot) < 0.1f &&
 					fabsf(wheel_speed) < 800.0f)
@@ -158,11 +148,11 @@ void StartControlTask(void *argument)
 						theta_bias += bias_gain * theta;
 					}
 					
-					float theta_corr = theta - theta_bias - k_w * wheel_speed;
+					float theta_corr = theta - k_w * wheel_speed;
 					
 					float u = LQR_Compute(theta_corr , theta_dot , wheel_speed);
 					
-					 esc_current_cmd = (int32_t)(u * 100.0f);
+					esc_current_cmd = (int32_t)(u * 100.0f);
 				}
 
             //始终发送

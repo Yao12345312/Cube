@@ -80,6 +80,7 @@ void StartCommunicationTask(void *argument)
 	auto& buzzer=Board::getBuzzer();
 	auto& esc_node = Board::getESCNode();
 	
+	uint32_t next_wake = osKernelGetTickCount();
 	//上电蜂鸣器提示
 	//buzzer.beep(2000,100);
 	
@@ -113,7 +114,8 @@ void StartCommunicationTask(void *argument)
 //	//发送心跳包
 //	MAVLink::SendHeartbeat();
 //			
-        osDelay(50);
+        next_wake += 100U;  //10Hz
+        osDelayUntil(next_wake);
     }
 }
 

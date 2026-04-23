@@ -10,7 +10,8 @@ volatile float K_lqr[3] = {
 };
 
 namespace {
-
+	
+//电流环输出限幅
 static constexpr float max_output = 30.0f;
 
 static inline float rpm_to_rad(float rpm)
