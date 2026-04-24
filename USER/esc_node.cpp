@@ -281,47 +281,45 @@ void ESCNode::calib_esc_command(uint8_t target_esc_index)
 
 
 // 广播电调控制值。接口名仍为rpm，但在电流环模式下该值表示 current_cmd_x100
-void ESCNode::send_esc_rpm_commmand(uint8_t esc_index, int32_t rpm)
-{	
-
-    // 控制值限幅。保留[-5000,5000]，电流环时对应约[-50A,50A]
-    if (rpm >  5000) rpm = 5000;
-    if (rpm < -5000) rpm = -5000;
-	
+void ESCNode::send_esc_current_commands(const int32_t *cmd_array, uint8_t len)
+{
     struct uavcan_equipment_esc_CubeRPMCommand msg = {0};
-	//设置命令数量
-    msg.rpm.len = Max_ESC_Num;
-	
-	//设置单个电调转速，其他通道设置0
-    for (uint8_t i = 0; i < msg.rpm.len; i++)
+
+    // 长度保护
+    if (len > Max_ESC_Num) len = Max_ESC_Num;
+
+    msg.rpm.len = len;
+    msg.arm = 1;
+
+    for (uint8_t i = 0; i < len; i++)
     {
-		//解锁电调
-		msg.arm = 1;
-		
-		msg.rpm.data[i] = (i == esc_index) ? rpm : 0;
+        int32_t rpm = cmd_array[i];
+
+        // 限幅
+        if (rpm >  5000) rpm = 5000;
+        if (rpm < -5000) rpm = -5000;
+
+        msg.rpm.data[i] = rpm;
     }
 
-    //存放序列化后的数据
     uint8_t buffer[64];
-	//序列化数据并获取有效长度
     uint32_t size = uavcan_equipment_esc_CubeRPMCommand_encode(&msg, buffer);
-	
-	//序列化失败
-	if(size == 0){return;}
-	
-	osMutexAcquire(m_send_mutex, osWaitForever);
-	
+
+    if (size == 0) return;
+
+    osMutexAcquire(m_send_mutex, osWaitForever);
+
     canardBroadcast(&canard_,
                     UAVCAN_EQUIPMENT_ESC_CUBERPMCOMMAND_SIGNATURE,
                     UAVCAN_EQUIPMENT_ESC_CUBERPMCOMMAND_ID,
                     &esc_rpm_commmand_transfer_id_,
-                    CANARD_TRANSFER_PRIORITY_HIGH, //控制指令设置高优先级
+                    CANARD_TRANSFER_PRIORITY_HIGH,
                     buffer,
                     size);
-	
-	esc_rpm_commmand_transfer_id_++;
-	
-	osMutexRelease(m_send_mutex);
+
+    esc_rpm_commmand_transfer_id_++;
+
+    osMutexRelease(m_send_mutex);
 }
 //获取电调状态
 bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)

@@ -175,7 +175,7 @@ void StartDisplayTask(void *argument){
 		
 		OLED_Update();
 		
-		next_wake += 30U;  //30Hz
+		next_wake += 20U;  //30Hz
         osDelayUntil(next_wake);
 	}
 
