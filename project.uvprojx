@@ -1562,14 +1562,14 @@
               <FilePath>.\u8g2\u8g2_d_memory.c</FilePath>
             </File>
             <File>
-              <FileName>u8g2_d_setup.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\u8g2\u8g2_d_setup.c</FilePath>
-            </File>
-            <File>
               <FileName>u8g2_font.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\u8g2\u8g2_font.c</FilePath>
+            </File>
+            <File>
+              <FileName>u8g2_d_setup.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\u8g2\u8g2_d_setup.c</FilePath>
             </File>
             <File>
               <FileName>u8g2_fonts.c</FileName>
@@ -1720,6 +1720,11 @@
               <FileName>u8x8_d_ssd1306_128x64_noname.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\u8g2\u8x8_d_ssd1306_128x64_noname.c</FilePath>
+            </File>
+            <File>
+              <FileName>u8x8_d_ssd1315_128x64_noname.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\u8g2\u8x8_d_ssd1315_128x64_noname.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -33,11 +33,11 @@ MenuState menu_att_page(void)
 	OLED_ShowString(0,32,"yaw:");
 	OLED_ShowString(0,48,"rpm:");
 	
-	OLED_ShowFloat(50, 0,roll);
-	OLED_ShowFloat(50, 16,pitch);
-	OLED_ShowFloat(50, 32,yaw);
+	OLED_ShowFloat(58, 0,roll);
+	OLED_ShowFloat(58, 16,pitch);
+	OLED_ShowFloat(58, 32,yaw);
 	if(esc_node.get_esc_status(ESC1_Index,esc_status[ESC1_Index]))
-		OLED_ShowFloat(50, 48,esc_status[ESC1_Index].rpm);
+		OLED_ShowFloat(58, 48,esc_status[ESC1_Index].rpm);
 	
 	OLED_Update();
 	

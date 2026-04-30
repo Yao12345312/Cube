@@ -79,6 +79,7 @@ void StartCommunicationTask(void *argument)
     auto& uart = Board::getUart1();
 	auto& buzzer=Board::getBuzzer();
 	auto& esc_node = Board::getESCNode();
+	auto& led = Board::getLedPwm();
 	
 	uint32_t next_wake = osKernelGetTickCount();
 	//上电蜂鸣器提示
@@ -87,33 +88,33 @@ void StartCommunicationTask(void *argument)
 	//没插TF卡的时候注释，否则HAL库会初始化失败
 //  SD_Test();
 		 
-//	if(!bluetooth.autoBaudScan())
-//	{
-//	Error_Handler();
-//	}
-//	//MAVLink封装帧
-//	MavRxFrame_t frame;
-//    uint32_t last_heartbeat = 0;
-//    uint32_t now;
+	if(!bluetooth.autoBaudScan())
+	{
+	Error_Handler();
+	}
+	//MAVLink封装帧
+	MavRxFrame_t frame;
+    uint32_t last_heartbeat = 0;
+    uint32_t now;
 //	
 //	float bat_vel;
 
 
-    while (1) {
+while (1) {
 	
 	
 //    //处理接收到的MAVLink数据
-//    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
-//            MAVLink::ParseData(frame.data, frame.len);
-//        }
-//	//MAVLink通信成功，设置绿灯1HZ闪烁
-//	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
-//	//丢失连接，闪烁红灯
-//		else{led.setRGBBlink(100,0,0,1);}
-//		
-//	//发送心跳包
-//	MAVLink::SendHeartbeat();
-//			
+    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
+            MAVLink::ParseData(frame.data, frame.len);
+        }
+	//MAVLink通信成功，设置绿灯1HZ闪烁
+	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
+	//丢失连接，闪烁红灯
+		else{led.setRGBBlink(100,0,0,1);}
+		
+	//发送心跳包
+	MAVLink::SendHeartbeat();
+			
         next_wake += 100U;  //10Hz
         osDelayUntil(next_wake);
     }

@@ -166,7 +166,7 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 			self->esc_status_[esc_id].target_rpm = target_rpm;
 			self->esc_status_[esc_id].voltage = voltage;
 			self->esc_status_[esc_id].current = current;
-			self->esc_status_[esc_id].temperature = temperature;
+			self->esc_status_[esc_id].temperature = (temperature-273.15f);
 			self->esc_status_[esc_id].calib_flag=calib_flag;
 			
 			osMutexRelease(self->m_esc_get_staus_mutex);
@@ -288,7 +288,7 @@ void ESCNode::send_esc_current_commands(const int32_t *cmd_array, uint8_t len)
     // 长度保护
     if (len > Max_ESC_Num) len = Max_ESC_Num;
 
-    msg.rpm.len = len;
+    msg.rpm.len = len + 1;
     msg.arm = 1;
 
     for (uint8_t i = 0; i < len; i++)
@@ -327,11 +327,14 @@ bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
 	if (esc_index >= Max_ESC_Num)
       return false;
 	
-	osMutexAcquire(m_esc_get_staus_mutex, osWaitForever);
-
-    out = esc_status_[esc_index];
+	if(osMutexAcquire(m_esc_get_staus_mutex, 0) == osOK)
+	{
+	out = esc_status_[esc_index];
 	
 	osMutexRelease(m_esc_get_staus_mutex);
+	}
+
+
 	
     return true;
 	

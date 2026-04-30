@@ -120,7 +120,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>ST-LINKIII-KEIL_SWO</Key>
-          <Name>-U37FF71064E573436C7E71A43 -O206 -SF4000 -C0 -A0 -I0 -HNlocalhost -HP7184 -P1 -N00("ARM CoreSight SW-DP") -D00(6BA02477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20000000 -FC8000 -FN1 -FF0STM32H7x_2048.FLM -FS08000000 -FL0200000 -FP0($$Device:STM32H743VITx$CMSIS\Flash\STM32H7x_2048.FLM)</Name>
+          <Name>-U55FF6C067182515050482367 -O206 -SF4000 -C0 -A0 -I0 -HNlocalhost -HP7184 -P1 -N00("ARM CoreSight SW-DP") -D00(6BA02477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8004 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20000000 -FC8000 -FN1 -FF0STM32H7x_2048.FLM -FS08000000 -FL0200000 -FP0($$Device:STM32H743VITx$CMSIS\Flash\STM32H7x_2048.FLM)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -157,16 +157,6 @@
       <WatchWindow1>
         <Ww>
           <count>0</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>k_w</ItemText>
-        </Ww>
-        <Ww>
-          <count>1</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>bias_gain</ItemText>
-        </Ww>
-        <Ww>
-          <count>2</count>
           <WinNumber>1</WinNumber>
           <ItemText>K_lqr</ItemText>
         </Ww>
@@ -2717,8 +2707,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\u8g2\u8g2_d_setup.c</PathWithFileName>
-      <FilenameWithoutPath>u8g2_d_setup.c</FilenameWithoutPath>
+      <PathWithFileName>.\u8g2\u8g2_font.c</PathWithFileName>
+      <FilenameWithoutPath>u8g2_font.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2729,8 +2719,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\u8g2\u8g2_font.c</PathWithFileName>
-      <FilenameWithoutPath>u8g2_font.c</FilenameWithoutPath>
+      <PathWithFileName>.\u8g2\u8g2_d_setup.c</PathWithFileName>
+      <FilenameWithoutPath>u8g2_d_setup.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -3094,6 +3084,18 @@
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
+    <File>
+      <GroupNumber>12</GroupNumber>
+      <FileNumber>230</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\u8g2\u8x8_d_ssd1315_128x64_noname.c</PathWithFileName>
+      <FilenameWithoutPath>u8x8_d_ssd1315_128x64_noname.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
   </Group>
 
   <Group>
@@ -3104,7 +3106,7 @@
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>230</FileNumber>
+      <FileNumber>231</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3116,7 +3118,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>231</FileNumber>
+      <FileNumber>232</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3128,7 +3130,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>232</FileNumber>
+      <FileNumber>233</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3140,7 +3142,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>233</FileNumber>
+      <FileNumber>234</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3152,7 +3154,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>234</FileNumber>
+      <FileNumber>235</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3164,7 +3166,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>235</FileNumber>
+      <FileNumber>236</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3176,7 +3178,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>236</FileNumber>
+      <FileNumber>237</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -3188,7 +3190,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>237</FileNumber>
+      <FileNumber>238</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
