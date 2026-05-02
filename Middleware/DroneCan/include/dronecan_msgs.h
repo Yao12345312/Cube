@@ -90,3 +90,4 @@
 #include <uavcan.equipment.esc.CubeStatus.h>
 #include <uavcan.equipment.esc.CubeSetID.h>
 #include <uavcan.equipment.esc.CubeRPMCommand.h>
+#include <uavcan.equipment.esc.CubeIqCommand.h>

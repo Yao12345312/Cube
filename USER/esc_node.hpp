@@ -35,7 +35,7 @@ public:
 	void set_esc_index_command(uint8_t target_esc_index);
 	void calib_esc_command(uint8_t target_esc_index);
 	void send_esc_current_commands(const int32_t *cmd_array, uint8_t len);
-	
+	void send_esc_rpm_commands(const int32_t *cmd_array, uint8_t len);
 	bool get_esc_status(uint8_t esc_index, ESCStatusCache& out);
 	
 	

@@ -1,4 +1,4 @@
-	#include "mavlink_bridge.hpp"
+#include "mavlink_bridge.hpp"
 #include "board.hpp"
 #include <string.h>
 #include <stdio.h>
@@ -102,8 +102,8 @@ namespace MAVLink {
     }
 
 
-	void SendHeartbeat(void)
-	{	
+void SendHeartbeat(void)
+{	
 	//获取串口实例
 	auto& uart = Board::getUart1();
 	
@@ -138,11 +138,84 @@ namespace MAVLink {
 
     // 通过 DMA 发送
 	uart.send(mav_tx_buf,len);
-	}
+}
 	
+void SendBatteryStatus(float voltage_v,
+                       float current_a,
+                       int8_t battery_remaining)
+{
+    auto& uart = Board::getUart1();
+
+    mavlink_message_t msg;
+
+    int16_t voltages[10] = {0};
+    voltages[0] = (int16_t)(voltage_v * 1000.0f);
+
+    int16_t current_battery = (int16_t)(current_a * 100.0f);
+
+    int32_t current_consumed = -1;
+    int32_t energy_consumed = -1;
+    int8_t temperature = INT16_MAX;
+
+    uint8_t id = 0;
+    uint8_t battery_function = MAV_BATTERY_FUNCTION_ALL;
+    uint8_t type = MAV_BATTERY_TYPE_LIPO;
+
+//    mavlink_msg_battery_status_pack(
+//        mav_sysid,
+//        mav_compid,
+//        &msg,
+//        id,
+//        battery_function,
+//        type,
+//        temperature,
+//        voltages,
+//        current_battery,
+//        current_consumed,
+//        energy_consumed,
+//        battery_remaining
+//    );
+
+    uint16_t len = mavlink_msg_to_send_buffer(mav_tx_buf, &msg);
+
+    uart.send(mav_tx_buf, len);
 }
 
+void SendAttitude(float roll,
+                  float pitch,
+                  float yaw,
+                  float rollspeed,
+                  float pitchspeed,
+                  float yawspeed)
+{
+    auto& uart = Board::getUart1();
 
+    mavlink_message_t msg;
 
+    // 时间戳（ms）
+    uint32_t time_boot_ms = osKernelGetTickCount();
+
+    mavlink_msg_attitude_pack(
+        mav_sysid,
+        mav_compid,
+        &msg,
+        time_boot_ms,
+        roll,
+        pitch,
+        yaw,
+        rollspeed,
+        pitchspeed,
+        yawspeed
+    );
+
+    uint16_t len = mavlink_msg_to_send_buffer(mav_tx_buf, &msg);
+
+    uart.send(mav_tx_buf, len);
+}
+	
+	
+	
+	
+}
 
 

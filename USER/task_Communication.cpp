@@ -11,7 +11,7 @@ osThreadId_t communicationTaskHandle = NULL;
 // 定义任务属性
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
-    .stack_size = 2 * 1024,      // 通信任务栈大小
+    .stack_size = 4 * 1024,      // 通信任务栈大小
     .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -115,7 +115,7 @@ while (1) {
 	//发送心跳包
 	MAVLink::SendHeartbeat();
 			
-        next_wake += 100U;  //10Hz
+        next_wake += 50U;  //20Hz
         osDelayUntil(next_wake);
     }
 }

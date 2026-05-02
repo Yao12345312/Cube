@@ -280,8 +280,45 @@ void ESCNode::calib_esc_command(uint8_t target_esc_index)
 }
 
 
-// 广播电调控制值。接口名仍为rpm，但在电流环模式下该值表示 current_cmd_x100
+// 广播电调电流
 void ESCNode::send_esc_current_commands(const int32_t *cmd_array, uint8_t len)
+{
+    struct uavcan_equipment_esc_CubeIqCommand msg = {0};
+
+    // 长度保护
+    if (len > Max_ESC_Num) len = Max_ESC_Num;
+
+    msg.Iq.len = len + 1;
+    msg.arm = 1;
+
+    for (uint8_t i = 0; i < len; i++)
+    {
+        int32_t Iq = cmd_array[i];
+
+        msg.Iq.data[i] = Iq;
+    }
+
+    uint8_t buffer[64];
+    uint32_t size = uavcan_equipment_esc_CubeIqCommand_encode(&msg, buffer);
+
+    if (size == 0) return;
+
+    osMutexAcquire(m_send_mutex, osWaitForever);
+
+    canardBroadcast(&canard_,
+                    UAVCAN_EQUIPMENT_ESC_CUBEIQCOMMAND_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_CUBEIQCOMMAND_ID,
+                    &esc_rpm_commmand_transfer_id_,
+                    CANARD_TRANSFER_PRIORITY_HIGH,
+                    buffer,
+                    size);
+
+    esc_rpm_commmand_transfer_id_++;
+
+    osMutexRelease(m_send_mutex);
+}
+//广播转速值
+void ESCNode::send_esc_rpm_commands(const int32_t *cmd_array, uint8_t len)
 {
     struct uavcan_equipment_esc_CubeRPMCommand msg = {0};
 
@@ -321,6 +358,7 @@ void ESCNode::send_esc_current_commands(const int32_t *cmd_array, uint8_t len)
 
     osMutexRelease(m_send_mutex);
 }
+
 //获取电调状态
 bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
 {	

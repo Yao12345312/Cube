@@ -58,6 +58,7 @@ static void SingleSideBalanceControl(
 
         if ((calib_counter++ % 20U) == 0U) {
             esc_node.calib_esc_command((ESC1_Index + 1));
+			
         }
     } else {
         calib_counter = 0;
@@ -95,7 +96,7 @@ static void SingleSideBalanceControl(
 
             float u = LQR_Compute(theta_corr, theta_dot[0], wheel_speed[0], ESC1_Index);
 
-            esc_current_cmd[0] = (int32_t)(u * 100.0f);
+            esc_current_cmd[0] = (int32_t)(u * 1000.0f);
         }
         // 始终发送
         esc_node.send_esc_current_commands(esc_current_cmd,3);
@@ -129,7 +130,9 @@ static void SinglePointBalanceControl(
     // X/Y轴平衡点自适应偏置
     static float theta_bias_x = 0.0f;
     static float theta_bias_y = 0.0f;
-
+	
+	bool cal_flag = false;
+	
     // 电调未校准
     if (!(esc_status[ESC1_Index].calib_flag &&
           esc_status[ESC2_Index].calib_flag &&
@@ -141,18 +144,20 @@ static void SinglePointBalanceControl(
 
         control_armed = false;
         arm_counter = 0;
-
-        if ((calib_counter++ % 20U) == 0U)
+    
+	if ((calib_counter++ % 20U) == 0U)
         {
             const uint8_t esc_id = (uint8_t)((calib_counter / 20U) % 3U);
             esc_node.calib_esc_command(esc_id + 1U);
+			
+			cal_flag = true;
         }
 
         esc_node.send_esc_current_commands(esc_current_cmd, 3);
         return;
     }
     calib_counter = 0;
-
+	
     // 未解锁
     if (!control_armed)
     {
@@ -227,9 +232,9 @@ static void SinglePointBalanceControl(
 	
 	
 	//获取电调电流环控制量
-	esc_current_cmd[0] = (int32_t)((out_x) * 100.0f);
-	esc_current_cmd[1] = (int32_t)((out_z) * 100.0f);
-	esc_current_cmd[2] = (int32_t)((out_y) * 100.0f);
+	esc_current_cmd[0] = (int32_t)((out_x) * 1000.0f);
+	esc_current_cmd[1] = (int32_t)((out_z) * 1000.0f);
+	esc_current_cmd[2] = (int32_t)((out_y) * 1000.0f);
 
 	//发送电调电流控制量
     esc_node.send_esc_current_commands(esc_current_cmd, 3);
@@ -336,6 +341,7 @@ void StartControlTask(void *argument)
 			calib_counter,
 			arm_counter,
 			control_armed);		
+		
 
         // LOG
         if ((log_counter++ % 10U) == 0U) {
@@ -343,14 +349,14 @@ void StartControlTask(void *argument)
                    (long)esc_status[ESC1_Index].rpm,
 				   (long)esc_status[ESC2_Index].rpm,
 				   (long)esc_status[ESC3_Index].rpm,
-				   (float)esc_status[ESC1_Index].temperature,
-				   (float)esc_status[ESC2_Index].temperature,
-				   (float)esc_status[ESC3_Index].temperature, 
+				   (float)esc_status[ESC1_Index].calib_flag,
+				   (float)esc_status[ESC2_Index].calib_flag,
+				   (float)esc_status[ESC3_Index].calib_flag, 
 				   (float)roll,					   
                    (float)pitch,
 				   (float)yaw);
         }
-
+		
         next_wake += 5U;  // 200Hz
         osDelayUntil(next_wake);
     }
