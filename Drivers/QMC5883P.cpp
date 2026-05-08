@@ -1,5 +1,6 @@
 #include "QMC5883P.hpp"
 #include "cmsis_os2.h"
+#include <cstring>
 
 #define QMC_REG_DATA_X_LSB 0x00
 #define QMC_REG_CONTROL_1  0x09
@@ -9,6 +10,16 @@
 QMC5883P::QMC5883P(I2C_HandleTypeDef *hi2c)
 {
     i2c = hi2c;
+
+    // Init calibration: zero offset, identity matrix
+    memset(offset, 0, sizeof(offset));
+    memset(matrix, 0, sizeof(matrix));
+    matrix[0][0] = 1.0f;
+    matrix[1][1] = 1.0f;
+    matrix[2][2] = 1.0f;
+
+    // Init calibration min/max
+    startCalibration();
 }
 
 bool QMC5883P::init(void)
@@ -43,7 +54,7 @@ bool QMC5883P::readRaw(MagData &data)
     return true;
 }
 
-/* 读取 + 校准 */
+// Read raw + apply hard/soft iron calibration
 bool QMC5883P::readCalibrated(MagData &data)
 {
     if(!readRaw(data))
@@ -51,12 +62,12 @@ bool QMC5883P::readCalibrated(MagData &data)
 
     convertMagFrame(data);
 
-    /* Hard iron */
+    // Hard iron correction
     float x = data.x - offset[0];
     float y = data.y - offset[1];
     float z = data.z - offset[2];
 
-    /* Soft iron */
+    // Soft iron correction
     data.x = matrix[0][0]*x + matrix[0][1]*y + matrix[0][2]*z;
     data.y = matrix[1][0]*x + matrix[1][1]*y + matrix[1][2]*z;
     data.z = matrix[2][0]*x + matrix[2][1]*y + matrix[2][2]*z;
@@ -64,25 +75,26 @@ bool QMC5883P::readCalibrated(MagData &data)
     return true;
 }
 
-/* 坐标系转换 */
+// Coordinate transform: QMC5883P frame -> BMI088 frame
+// QMC5883P rotates 180 deg CW around Z-axis to align with BMI088 accel frame
+// Z-axis is same direction between both sensors
+// X_acc = -X_mag, Y_acc = -Y_mag, Z_acc = Z_mag
 void QMC5883P::convertMagFrame(MagData &data)
 {
-    int16_t mx_tmp = data.x;
-    int16_t my_tmp = data.y;
-
-    data.x = my_tmp;
-    data.y = -mx_tmp;
+    data.x = -data.x;
+    data.y = -data.y;
+    // Z unchanged (same direction)
 }
 
 
 void QMC5883P::startCalibration()
 {
-    minV[0]=minV[1]=minV[2]=1e9;
-    maxV[0]=maxV[1]=maxV[2]=-1e9;
+    minV[0]=minV[1]=minV[2]=1e9f;
+    maxV[0]=maxV[1]=maxV[2]=-1e9f;
 }
 
 
-/* 更新数据 */
+// Collect min/max for each axis
 void QMC5883P::updateCalibration(const MagData &d)
 {
     if(d.x<minV[0]) minV[0]=d.x;
@@ -95,22 +107,31 @@ void QMC5883P::updateCalibration(const MagData &d)
 }
 
 
-/* 完成校准 */
+// Compute hard iron offset and soft iron scale matrix from collected min/max
 void QMC5883P::finishCalibration()
 {
-    offset[0]=(maxV[0]+minV[0])*0.5f;
-    offset[1]=(maxV[1]+minV[1])*0.5f;
-    offset[2]=(maxV[2]+minV[2])*0.5f;
+    // Hard iron: center of the ellipsoid
+    offset[0] = (maxV[0] + minV[0]) * 0.5f;
+    offset[1] = (maxV[1] + minV[1]) * 0.5f;
+    offset[2] = (maxV[2] + minV[2]) * 0.5f;
 
-    float scaleX=(maxV[0]-minV[0])*0.5f;
-    float scaleY=(maxV[1]-minV[1])*0.5f;
-    float scaleZ=(maxV[2]-minV[2])*0.5f;
+    // Soft iron: compute scale factors from axis ranges
+    // Diagonal-only approximation (assumes axis-aligned distortion)
+    float scaleX = (maxV[0] - minV[0]) * 0.5f;
+    float scaleY = (maxV[1] - minV[1]) * 0.5f;
+    float scaleZ = (maxV[2] - minV[2]) * 0.5f;
 
-    float avg=(scaleX+scaleY+scaleZ)/3.0f;
+    if (scaleX < 1e-6f) scaleX = 1.0f;
+    if (scaleY < 1e-6f) scaleY = 1.0f;
+    if (scaleZ < 1e-6f) scaleZ = 1.0f;
 
-    matrix[0][0]=avg/scaleX;
-    matrix[1][1]=avg/scaleY;
-    matrix[2][2]=avg/scaleZ;
+    float avg = (scaleX + scaleY + scaleZ) / 3.0f;
+
+    // Reset matrix to identity, then apply diagonal scaling
+    memset(matrix, 0, sizeof(matrix));
+    matrix[0][0] = avg / scaleX;
+    matrix[1][1] = avg / scaleY;
+    matrix[2][2] = avg / scaleZ;
 }
 
 

@@ -228,9 +228,28 @@ int8_t Bmi088::getGyroData(float &gyro_x, float &gyro_y, float &gyro_z)
         float sensitivity = getGyroSensitivity();
         
         // 将原始数据转换为°/s
-        gyro_x = (float)gyro_data.x / sensitivity;
-        gyro_y = (float)gyro_data.y / sensitivity;
-        gyro_z = (float)gyro_data.z / sensitivity;
+        float gx = (float)gyro_data.x / sensitivity;
+		float gy = (float)gyro_data.y / sensitivity;
+		float gz = (float)gyro_data.z / sensitivity;
+
+		//IIR低通滤波
+		if (!m_gyro_iir_init)
+		{
+			m_gyro_iir_state[0] = gx;
+			m_gyro_iir_state[1] = gy;
+			m_gyro_iir_state[2] = gz;
+			m_gyro_iir_init = true;
+		}
+		else
+		{
+			m_gyro_iir_state[0] = m_gyro_iir_alpha * gx + (1.0f - m_gyro_iir_alpha) * m_gyro_iir_state[0];
+			m_gyro_iir_state[1] = m_gyro_iir_alpha * gy + (1.0f - m_gyro_iir_alpha) * m_gyro_iir_state[1];
+			m_gyro_iir_state[2] = m_gyro_iir_alpha * gz + (1.0f - m_gyro_iir_alpha) * m_gyro_iir_state[2];
+		}
+
+		gyro_x = m_gyro_iir_state[0];
+		gyro_y = m_gyro_iir_state[1];
+		gyro_z = m_gyro_iir_state[2];
     }
     
     return rslt;

@@ -15,6 +15,20 @@ public:
     QMC5883P(I2C_HandleTypeDef *hi2c);
 
     bool init();
+
+    // Get hard iron offset (uT)
+    void getOffset(float &ox, float &oy, float &oz) const
+    {
+        ox = offset[0]; oy = offset[1]; oz = offset[2];
+    }
+
+    // Get soft iron matrix
+    void getMatrix(float m[3][3]) const
+    {
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                m[i][j] = matrix[i][j];
+    }
     bool readRaw(MagData &data);
     bool readCalibrated(MagData &data);
 

@@ -148,33 +148,33 @@ void SendBatteryStatus(float voltage_v,
 
     mavlink_message_t msg;
 
-    int16_t voltages[10] = {0};
-    voltages[0] = (int16_t)(voltage_v * 1000.0f);
+    uint16_t voltages[10] = {0};
+    voltages[0] = (uint16_t)(voltage_v * 1000.0f);
 
     int16_t current_battery = (int16_t)(current_a * 100.0f);
 
     int32_t current_consumed = -1;
     int32_t energy_consumed = -1;
-    int8_t temperature = INT16_MAX;
+    int16_t temperature = INT16_MAX;
 
     uint8_t id = 0;
     uint8_t battery_function = MAV_BATTERY_FUNCTION_ALL;
     uint8_t type = MAV_BATTERY_TYPE_LIPO;
 
-//    mavlink_msg_battery_status_pack(
-//        mav_sysid,
-//        mav_compid,
-//        &msg,
-//        id,
-//        battery_function,
-//        type,
-//        temperature,
-//        voltages,
-//        current_battery,
-//        current_consumed,
-//        energy_consumed,
-//        battery_remaining
-//    );
+    mavlink_msg_battery_status_pack(
+        mav_sysid,
+        mav_compid,
+        &msg,
+        id,
+        battery_function,
+        type,
+        temperature,
+        voltages,
+        current_battery,
+        current_consumed,
+        energy_consumed,
+        battery_remaining
+    );
 
     uint16_t len = mavlink_msg_to_send_buffer(mav_tx_buf, &msg);
 

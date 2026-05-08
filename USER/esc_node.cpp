@@ -4,18 +4,18 @@
 
 static struct uavcan_protocol_NodeStatus node_status;
 
-//åˆå§‹åŒ–æ—¶å…ˆå®ä¾‹åŒ–can_driver,å†ä¼ å…¥can_driverå®ä¾‹åŒ–ESCNode
+//³õÊ¼»¯Ê±ÏÈÊµÀı»¯can_driver,ÔÙ´«Èëcan_driverÊµÀı»¯ESCNode
 ESCNode::ESCNode(UavcanCanDriver& can_driver)
     : can_driver_(can_driver)
-	, node_status_transfer_id_(0)      // æ„é€ å‡½æ•°ä¸­åˆå§‹åŒ–transfer IDä¸º0
+	, node_status_transfer_id_(0)      // ¹¹Ôìº¯ÊıÖĞ³õÊ¼»¯transfer IDÎª0
     , esc_index_transfer_id_(0)
     , calib_esc_transfer_id_(0)
     , esc_rpm_commmand_transfer_id_(0)
 	, esc_arm_flag(false)
 {	
-	//å‘é€æŒ‡ä»¤äº’æ–¥é”
+	//·¢ËÍÖ¸Áî»¥³âËø
 	m_send_mutex = osMutexNew(NULL);
-	//è·å–çŠ¶æ€äº’æ–¥é”
+	//»ñÈ¡×´Ì¬»¥³âËø
 	m_esc_get_staus_mutex = osMutexNew(NULL);
 }
 
@@ -24,29 +24,29 @@ void ESCNode::init()
     canardInit(&canard_,
                memory_pool_,
                sizeof(memory_pool_),
-               onTransferReceived, //æä¾›é™æ€å‡½æ•°
+               onTransferReceived, //Ìá¹©¾²Ì¬º¯Êı
                shouldAcceptTransfer,
                this);
 			   
-	//è®¾ç½®å½“å‰èŠ‚ç‚¹ID
+	//ÉèÖÃµ±Ç°½ÚµãID
     canardSetLocalNodeID(&canard_,10);
 
-    // ç»‘å®šåº•å±‚cané©±åŠ¨
+    // °ó¶¨µ×²ãcanÇı¶¯
     can_driver_.attach_canard(&canard_);
 }
 
 void ESCNode::spin_once()
 {	
-	//æ¯æ¬¡æœ€å¤šå‘é€1å¸§
+	//Ã¿´Î×î¶à·¢ËÍ1Ö¡
     can_driver_.process_tx(5);
     can_driver_.process_rx(64);
 }
-//å¤„ç†æ¥æ”¶åˆ°çš„ä¿¡æ¯
+//´¦Àí½ÓÊÕµ½µÄĞÅÏ¢
 void ESCNode::onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
 {	
 	ESCNode* self = (ESCNode*)ins->user_reference;
 	
-	//å¤„ç†è¯·æ±‚
+	//´¦ÀíÇëÇó
     if (transfer->transfer_type == CanardTransferTypeRequest) 
 	{
         switch (transfer->data_type_id) 
@@ -57,7 +57,7 @@ void ESCNode::onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer
 
         }
     }
-	//å¤„ç†å¹¿æ’­ç±»å‹
+	//´¦Àí¹ã²¥ÀàĞÍ
 	if (transfer->transfer_type == CanardTransferTypeBroadcast)
     {
         switch (transfer->data_type_id)
@@ -70,7 +70,7 @@ void ESCNode::onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer
         }
     }
 }
-//æ£€æŸ¥æˆ‘ä»¬æ˜¯å¦éœ€è¦è¿™æ¡æ¶ˆæ¯
+//¼ì²éÎÒÃÇÊÇ·ñĞèÒªÕâÌõÏûÏ¢
 bool ESCNode::shouldAcceptTransfer(const CanardInstance* ins,
                                    uint64_t* out_data_type_signature,
                                    uint16_t data_type_id,
@@ -102,7 +102,7 @@ bool ESCNode::shouldAcceptTransfer(const CanardInstance* ins,
 	return false;
 	
 }
-//å¤„ç†æ¥æ”¶åˆ°çš„èŠ‚ç‚¹ä¿¡æ¯
+//´¦Àí½ÓÊÕµ½µÄ½ÚµãĞÅÏ¢
 void ESCNode::handle_GetNodeInfo(CanardInstance *ins, CanardRxTransfer *transfer)
 {	
 	ESCNode* self = (ESCNode*)ins->user_reference;
@@ -141,15 +141,15 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 
     if (!uavcan_equipment_esc_CubeStatus_decode(transfer, &msg))
     {
-        // è§£ææˆåŠŸ,ç”µè°ƒIDä»[1,3]æ˜ å°„ä¸º[0,2]
+        // ½âÎö³É¹¦,µçµ÷ID´Ó[1,3]Ó³ÉäÎª[0,2]
         uint8_t esc_id = (msg.esc_index - 1);
 
         float voltage = msg.voltage;
         float current = msg.current;
         float temperature = msg.temperature;
-		//è·å–ç”µè°ƒå®é™…è½¬é€Ÿ
+		//»ñÈ¡µçµ÷Êµ¼Ê×ªËÙ
         int32_t rpm = msg.rpm;
-		//è·å–ç”µè°ƒæ§åˆ¶æŒ‡ä»¤ï¼ˆå­—æ®µåä»ä¸ºtarget_rpmï¼‰
+		//»ñÈ¡µçµ÷¿ØÖÆÖ¸Áî£¨×Ö¶ÎÃûÈÔÎªtarget_rpm£©
 		int32_t target_rpm = msg.target_rpm;
 		
 		bool calib_flag = msg.calib_done;
@@ -157,7 +157,7 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 //      printf("ESC[%d]: rpm=%ld, V=%.2f, I=%.2f, T=%.2f\n",
 //               esc_id, rpm, voltage, current, temperature);
 
-        //å­˜å‚¨ç”µè°ƒçŠ¶æ€
+        //´æ´¢µçµ÷×´Ì¬
         if (esc_id < Max_ESC_Num)
 		{	
 			osMutexAcquire(self->m_esc_get_staus_mutex, osWaitForever);
@@ -176,31 +176,31 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 }
 
 	
-//å¹¿æ’­å½“å‰èŠ‚ç‚¹çŠ¶æ€
+//¹ã²¥µ±Ç°½Úµã×´Ì¬
 void ESCNode::send_node_status()
 {	
 
     struct uavcan_protocol_NodeStatus msg;
-	//è·å–ç³»ç»Ÿæ—¶é—´ï¼ˆsï¼‰
+	//»ñÈ¡ÏµÍ³Ê±¼ä£¨s£©
     msg.uptime_sec = can_driver_.micros64() / 1000000;
     msg.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK;
     msg.mode   = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
     msg.sub_mode = 0;
     msg.vendor_specific_status_code = 0;
 
-	//å­˜æ”¾åºåˆ—åŒ–åçš„æ•°æ®ï¼Œä¼ å…¥Broadcastå‡½æ•°
+	//´æ·ÅĞòÁĞ»¯ºóµÄÊı¾İ£¬´«ÈëBroadcastº¯Êı
     uint8_t buffer[32];
-	//åºåˆ—åŒ–æ•°æ®å¹¶è·å–æœ‰æ•ˆé•¿åº¦
+	//ĞòÁĞ»¯Êı¾İ²¢»ñÈ¡ÓĞĞ§³¤¶È
     uint32_t size = uavcan_protocol_NodeStatus_encode(&msg, buffer);
 
 	/*
-    * param1:Canardåº“å®ä¾‹æŒ‡é’ˆï¼ŒåŒ…å«äº†å†…å­˜æ± ã€èŠ‚ç‚¹IDç­‰çŠ¶æ€ä¿¡æ¯
-    * param2:æ•°æ®ç±»å‹ç­¾åï¼šç”±DSDLå®šä¹‰è®¡ç®—å‡ºçš„64ä½å“ˆå¸Œå€¼ï¼Œç”¨äºå”¯ä¸€æ ‡è¯†æ¶ˆæ¯ç±»å‹ã€‚æ¥æ”¶ç«¯é€šè¿‡æ­¤å€¼éªŒè¯æ¶ˆæ¯æ ¼å¼æ­£ç¡®æ€§
-    * param3:æ¶ˆæ¯ä¸»é¢˜IDï¼š0-65535ä¹‹é—´çš„æ•°å€¼ï¼Œæ ‡è¯†æ¶ˆæ¯ç±»åˆ«
-    * param4:ä¼ è¾“IDæŒ‡é’ˆï¼šæ¯æ¬¡å‘é€åŒç±»å‹å¹¿æ’­æ¶ˆæ¯æ—¶è‡ªå¢1ï¼ˆ0-31å¾ªç¯ï¼‰ï¼Œç”¨äºæ¥æ”¶ç«¯åŒºåˆ†æ¶ˆæ¯å…ˆåé¡ºåºå’Œæ£€æµ‹ä¸¢å¸§
-    * param5:ä¼˜å…ˆçº§ï¼š0ï¼ˆæœ€é«˜ï¼‰åˆ°31ï¼ˆæœ€ä½ï¼‰ï¼ŒCANæ€»çº¿ä»²è£æ—¶é«˜ä¼˜å…ˆçº§æ¶ˆæ¯ä¼˜å…ˆä¼ è¾“
-    * param6:æœ‰æ•ˆè´Ÿè½½æ•°æ®
-    * param7:æœ‰æ•ˆæ•°æ®è´Ÿè½½é•¿åº¦
+    * param1:Canard¿âÊµÀıÖ¸Õë£¬°üº¬ÁËÄÚ´æ³Ø¡¢½ÚµãIDµÈ×´Ì¬ĞÅÏ¢
+    * param2:Êı¾İÀàĞÍÇ©Ãû£ºÓÉDSDL¶¨Òå¼ÆËã³öµÄ64Î»¹şÏ£Öµ£¬ÓÃÓÚÎ¨Ò»±êÊ¶ÏûÏ¢ÀàĞÍ¡£½ÓÊÕ¶ËÍ¨¹ı´ËÖµÑéÖ¤ÏûÏ¢¸ñÊ½ÕıÈ·ĞÔ
+    * param3:ÏûÏ¢Ö÷ÌâID£º0-65535Ö®¼äµÄÊıÖµ£¬±êÊ¶ÏûÏ¢Àà±ğ
+    * param4:´«ÊäIDÖ¸Õë£ºÃ¿´Î·¢ËÍÍ¬ÀàĞÍ¹ã²¥ÏûÏ¢Ê±×ÔÔö1£¨0-31Ñ­»·£©£¬ÓÃÓÚ½ÓÊÕ¶ËÇø·ÖÏûÏ¢ÏÈºóË³ĞòºÍ¼ì²â¶ªÖ¡
+    * param5:ÓÅÏÈ¼¶£º0£¨×î¸ß£©µ½31£¨×îµÍ£©£¬CAN×ÜÏßÖÙ²ÃÊ±¸ßÓÅÏÈ¼¶ÏûÏ¢ÓÅÏÈ´«Êä
+    * param6:ÓĞĞ§¸ºÔØÊı¾İ
+    * param7:ÓĞĞ§Êı¾İ¸ºÔØ³¤¶È
     */
 	osMutexAcquire(m_send_mutex, osWaitForever);
 	
@@ -217,20 +217,20 @@ void ESCNode::send_node_status()
 	osMutexRelease(m_send_mutex);
 }
 
-//è®¾ç½®ç”µè°ƒç¼–å·
+//ÉèÖÃµçµ÷±àºÅ
 void ESCNode::set_esc_index_command(uint8_t target_esc_index)
 {
 
     struct uavcan_equipment_esc_CubeSetID  msg = {0};
-	//ä¼ å…¥ç›®æ ‡ç”µè°ƒIDåºå·
+	//´«ÈëÄ¿±êµçµ÷IDĞòºÅ
 	msg.esc_index=target_esc_index;
 
-    //å­˜æ”¾åºåˆ—åŒ–åçš„æ•°æ®
+    //´æ·ÅĞòÁĞ»¯ºóµÄÊı¾İ
     uint8_t buffer[32];
-	//åºåˆ—åŒ–æ•°æ®å¹¶è·å–æœ‰æ•ˆé•¿åº¦
+	//ĞòÁĞ»¯Êı¾İ²¢»ñÈ¡ÓĞĞ§³¤¶È
     uint32_t size = uavcan_equipment_esc_CubeSetID_encode(&msg, buffer);
 	
-	//åºåˆ—åŒ–å¤±è´¥
+	//ĞòÁĞ»¯Ê§°Ü
 	if(size == 0){return;}
 	
 	osMutexAcquire(m_send_mutex, osWaitForever);
@@ -247,21 +247,21 @@ void ESCNode::set_esc_index_command(uint8_t target_esc_index)
 	
 	osMutexRelease(m_send_mutex);
 }
-//ç”µè°ƒæ ¡å‡†å‘½ä»¤
+//µçµ÷Ğ£×¼ÃüÁî
 void ESCNode::calib_esc_command(uint8_t target_esc_index)
 {
 
     struct uavcan_equipment_esc_CubeCalibCommand msg = {0};
-	//ä¼ å…¥éœ€è¦æ ¡å‡†çš„ç›®æ ‡ç”µè°ƒIDåºå·
+	//´«ÈëĞèÒªĞ£×¼µÄÄ¿±êµçµ÷IDĞòºÅ
 	msg.esc_index=target_esc_index;
 
-    //å­˜æ”¾åºåˆ—åŒ–åçš„æ•°æ®
+    //´æ·ÅĞòÁĞ»¯ºóµÄÊı¾İ
     uint8_t buffer[32];
-	//åºåˆ—åŒ–æ•°æ®å¹¶è·å–æœ‰æ•ˆé•¿åº¦
+	//ĞòÁĞ»¯Êı¾İ²¢»ñÈ¡ÓĞĞ§³¤¶È
     uint32_t size = uavcan_equipment_esc_CubeCalibCommand_encode(&msg, buffer);
 	
 	
-	//åºåˆ—åŒ–å¤±è´¥
+	//ĞòÁĞ»¯Ê§°Ü
 	if(size == 0){return;}
 	
 	osMutexAcquire(m_send_mutex, osWaitForever);
@@ -280,12 +280,12 @@ void ESCNode::calib_esc_command(uint8_t target_esc_index)
 }
 
 
-// å¹¿æ’­ç”µè°ƒç”µæµ
+// ¹ã²¥µçµ÷µçÁ÷
 void ESCNode::send_esc_current_commands(const int32_t *cmd_array, uint8_t len)
 {
     struct uavcan_equipment_esc_CubeIqCommand msg = {0};
 
-    // é•¿åº¦ä¿æŠ¤
+    // ³¤¶È±£»¤
     if (len > Max_ESC_Num) len = Max_ESC_Num;
 
     msg.Iq.len = len + 1;
@@ -317,12 +317,12 @@ void ESCNode::send_esc_current_commands(const int32_t *cmd_array, uint8_t len)
 
     osMutexRelease(m_send_mutex);
 }
-//å¹¿æ’­è½¬é€Ÿå€¼
+//¹ã²¥×ªËÙÖµ
 void ESCNode::send_esc_rpm_commands(const int32_t *cmd_array, uint8_t len)
 {
     struct uavcan_equipment_esc_CubeRPMCommand msg = {0};
 
-    // é•¿åº¦ä¿æŠ¤
+    // ³¤¶È±£»¤
     if (len > Max_ESC_Num) len = Max_ESC_Num;
 
     msg.rpm.len = len + 1;
@@ -332,7 +332,7 @@ void ESCNode::send_esc_rpm_commands(const int32_t *cmd_array, uint8_t len)
     {
         int32_t rpm = cmd_array[i];
 
-        // é™å¹…
+        // ÏŞ·ù
         if (rpm >  5000) rpm = 5000;
         if (rpm < -5000) rpm = -5000;
 
@@ -359,7 +359,7 @@ void ESCNode::send_esc_rpm_commands(const int32_t *cmd_array, uint8_t len)
     osMutexRelease(m_send_mutex);
 }
 
-//è·å–ç”µè°ƒçŠ¶æ€
+//»ñÈ¡µçµ÷×´Ì¬
 bool ESCNode::get_esc_status(uint8_t esc_index, ESCStatusCache& out)
 {	
 	if (esc_index >= Max_ESC_Num)

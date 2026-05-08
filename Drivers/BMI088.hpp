@@ -64,6 +64,11 @@ private:
     float m_gyro_offset[3];      // 陀螺仪零偏 (°/s)
     bool m_accel_calibrated;     // 加速度计是否已校准
     bool m_gyro_calibrated;      // 陀螺仪是否已校准
+	
+	float m_gyro_iir_alpha = 0.5f;   // 0~1，越小滤波越强，但延时更大
+	
+	float m_gyro_iir_state[3] = {0.0f, 0.0f, 0.0f};
+	bool  m_gyro_iir_init = false;
 
     void csLow(uint8_t dev);
     void csHigh(uint8_t dev);

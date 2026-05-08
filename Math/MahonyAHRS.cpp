@@ -1,6 +1,6 @@
 #include "MahonyAHRS.hpp"
 #include "uart3Driver.hpp"
-//¹¹Ôìº¯Êı
+//ï¿½ï¿½ï¿½ìº¯ï¿½ï¿½
 MahonyAHRS::MahonyAHRS(float freq, float kp, float ki)
 {
     sampleFreq = freq;
@@ -13,7 +13,7 @@ MahonyAHRS::MahonyAHRS(float freq, float kp, float ki)
     integralFBx = integralFBy = integralFBz = 0.0f;
 }
 
-//Æ½·½¸ùµ¹Êı
+//Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 inline float MahonyAHRS::invSqrt(float x)
 {
     float inv = 1.0f / sqrtf(x);
@@ -32,54 +32,61 @@ void MahonyAHRS::update(float gx, float gy, float gz,
     float ex, ey, ez;
 	
 	float gyro_norm = sqrtf(gx*gx + gy*gy + gz*gz);
-	//¶¯Ì¬´ÅÁ¦¼ÆÈ¨ÖØ
+	//ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½
 	float magWeight_dynamic;
 
-	if (gyro_norm > 0.7f)       // ¿ìËÙĞı×ª
+	if (gyro_norm > 0.7f)       // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ª
 		magWeight_dynamic = 0.0f;
-	else if (gyro_norm > 0.3f)  // ÖĞËÙ
+	else if (gyro_norm > 0.3f)  // ï¿½ï¿½ï¿½ï¿½
 		magWeight_dynamic = 0.001f;
-	else                        // ¾²Ö¹/ÂıËÙ
+	else                        // ï¿½ï¿½Ö¹/ï¿½ï¿½ï¿½ï¿½
 		magWeight_dynamic = 0.003f;
-    // ¹éÒ»»¯¼ÓËÙ¶È
+    // ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
     recipNorm = invSqrt(ax*ax + ay*ay + az*az);
     ax *= recipNorm;
     ay *= recipNorm;
     az *= recipNorm;
 
-    // ¹éÒ»»¯´ÅÁ¦¼Æ
+    // ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     recipNorm = invSqrt(mx*mx + my*my + mz*mz);
     mx *= recipNorm;
     my *= recipNorm;
     mz *= recipNorm;
 
-    // ²Î¿¼·½Ïò¼ÆËã
+    // ï¿½Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     hx = 2.0f * (mx*(0.5f - q2*q2 - q3*q3) + my*(q1*q2 - q0*q3) + mz*(q1*q3 + q0*q2));
     hy = 2.0f * (mx*(q1*q2 + q0*q3) + my*(0.5f - q1*q1 - q3*q3) + mz*(q2*q3 - q0*q1));
     bx = sqrtf(hx*hx + hy*hy);
     bz = 2.0f * (mx*(q1*q3 - q0*q2) + my*(q2*q3 + q0*q1) + mz*(0.5f - q1*q1 - q2*q2));
 
-    // ¹À¼ÆÖØÁ¦
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     vx = 2.0f*(q1*q3 - q0*q2);
     vy = 2.0f*(q0*q1 + q2*q3);
     vz = q0*q0 - q1*q1 - q2*q2 + q3*q3;
 
     
-    // Ô¤²â´Å³¡·½Ïò
+    // Ô¤ï¿½ï¿½Å³ï¿½ï¿½ï¿½ï¿½ï¿½
 	wx = 2.0f*bx*(0.5f - q2*q2 - q3*q3) + 2.0f*bz*(q1*q3 - q0*q2);
 	wy = 2.0f*bx*(q1*q2 - q0*q3) + 2.0f*bz*(q0*q1 + q2*q3);
 	wz = 2.0f*bx*(q0*q2 + q1*q3) + 2.0f*bz*(0.5f - q1*q1 - q2*q2);
 
-	// Îó²î (¼ÓËÙ¶È + ´ÅÁ¦¼Æ)
+	// Error = accel cross estimated gravity
 	ex = (ay*vz - az*vy);
 	ey = (az*vx - ax*vz);
-	ez = (ax*vy - ay*vx );
-	//zÖá»ı·ÖÏŞ·ù
+	ez = (ax*vy - ay*vx);
+
+	// Magnetometer error: measured mag cross estimated mag field
+	// Applied with dynamic weight to eliminate yaw drift
+	// Static/slow: higher weight; fast rotation: zero weight (trust gyro)
+	ex += magWeight_dynamic * (my*wz - mz*wy);
+	ey += magWeight_dynamic * (mz*wx - mx*wz);
+	ez += magWeight_dynamic * (mx*wy - my*wx);
+
+	// Z-axis error clamp
 	if (fabsf(ez) > 0.2f)
     ez = 0;
-	//if(fabsf(ez)>0.2) ez = (ax*vy - ay*vx); //Îó²î½Ï´óÊ±£¬ºöÂÔ´ÅÁ¦¼Æ
 		
-    // »ı·ÖÏî
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     integralFBx += twoKi * ex * (1.0f / sampleFreq);
     integralFBy += twoKi * ey * (1.0f / sampleFreq);
     integralFBz += twoKi * ez * (1.0f / sampleFreq);

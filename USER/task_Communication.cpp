@@ -2,6 +2,7 @@
 #include "MAVLink_bridge.hpp"
 #include "MahonyAHRS.hpp"
 #include "board.hpp"
+#include "attitute.hpp"
 #include <string>
 #include <cstdio>
 
@@ -21,6 +22,8 @@ uint8_t txBuf[BLOCK_SIZE];
 uint8_t rxBuf[BLOCK_SIZE];
 
 extern SD_HandleTypeDef hsd1;
+
+extern osMessageQueueId_t g_mavSensorQueue;
 
 //SD卡快速测试函数
 void SD_Test(void)
@@ -101,22 +104,37 @@ void StartCommunicationTask(void *argument)
 
 
 while (1) {
-	
-	
-//    //处理接收到的MAVLink数据
-    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
-            MAVLink::ParseData(frame.data, frame.len);
-        }
-	//MAVLink通信成功，设置绿灯1HZ闪烁
-	if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
-	//丢失连接，闪烁红灯
-		else{led.setRGBBlink(100,0,0,1);}
-		
-	//发送心跳包
-	MAVLink::SendHeartbeat();
-			
-        next_wake += 50U;  //20Hz
-        osDelayUntil(next_wake);
-    }
-}
+
+		// MAVLink receive
+	    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
+	            MAVLink::ParseData(frame.data, frame.len);
+	        }
+		if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
+			else{led.setRGBBlink(100,0,0,1);}
+
+		// Receive sensor data and send MAVLink messages
+		if (g_mavSensorQueue != NULL) {
+		    MavSensorData_t sensor_data;
+		    if (osMessageQueueGet(g_mavSensorQueue, &sensor_data, NULL, 0) == osOK) {
+		        MAVLink::SendAttitude(
+		            sensor_data.roll,
+		            sensor_data.pitch,
+		            sensor_data.yaw,
+		            sensor_data.rollspeed,
+		            sensor_data.pitchspeed,
+		            sensor_data.yawspeed
+		        );
+		        MAVLink::SendBatteryStatus(
+		            sensor_data.voltage,
+		            sensor_data.current,
+		            sensor_data.battery_remaining
+		        );
+		    }
+		}
+
+		MAVLink::SendHeartbeat();
+
+	        next_wake += 50U;  //20Hz
+	        osDelayUntil(next_wake);
+	    }}
 

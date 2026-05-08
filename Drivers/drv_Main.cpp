@@ -99,5 +99,5 @@ void create_application_tasks(void)
         Error_Handler();
     }
 	
-	   printf("All tasks created successfully!\r\n");
+	    printf("All tasks created successfully!\r\n");
 }
