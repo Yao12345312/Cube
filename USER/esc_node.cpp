@@ -236,7 +236,7 @@ void ESCNode::set_esc_index_command(uint8_t target_esc_index)
 	osMutexAcquire(m_send_mutex, osWaitForever);
 	
     canardBroadcast(&canard_,
-                   UAVCAN_EQUIPMENT_ESC_CUBESETID_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_CUBESETID_SIGNATURE,
                     UAVCAN_EQUIPMENT_ESC_CUBESETID_ID,
                     &esc_index_transfer_id_,
                     CANARD_TRANSFER_PRIORITY_MEDIUM, 

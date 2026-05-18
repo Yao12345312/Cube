@@ -35,9 +35,16 @@ public:
     void convertMagFrame(MagData &data);
 
     /* calibration */
+    static constexpr uint16_t CALIB_TARGET_SAMPLES = 2500;
+
     void startCalibration();
     void updateCalibration(const MagData &data);
     void finishCalibration();
+
+    // Calibration collection state (volatile: written by control task, read by display task)
+    bool     isCollecting()    const { return m_collecting; }
+    uint16_t getSampleCount()  const { return m_sampleCount; }
+    uint16_t getTargetCount()  const { return CALIB_TARGET_SAMPLES; }
 
 private:
 
@@ -57,4 +64,8 @@ private:
     /* calibration buffer */
     float minV[3];
     float maxV[3];
+
+    /* calibration collection state */
+    volatile bool     m_collecting  = false;
+    volatile uint16_t m_sampleCount = 0;
 };

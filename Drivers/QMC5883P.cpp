@@ -11,15 +11,18 @@ QMC5883P::QMC5883P(I2C_HandleTypeDef *hi2c)
 {
     i2c = hi2c;
 
-    // Init calibration: zero offset, identity matrix
+    // Init calibration: zero offset, identity matrix (no correction)
     memset(offset, 0, sizeof(offset));
     memset(matrix, 0, sizeof(matrix));
     matrix[0][0] = 1.0f;
     matrix[1][1] = 1.0f;
     matrix[2][2] = 1.0f;
 
-    // Init calibration min/max
-    startCalibration();
+    // Calibration collection starts inactive — only enabled by user via menu
+    m_collecting  = false;
+    m_sampleCount = 0;
+    memset(minV, 0, sizeof(minV));
+    memset(maxV, 0, sizeof(maxV));
 }
 
 bool QMC5883P::init(void)
@@ -89,14 +92,21 @@ void QMC5883P::convertMagFrame(MagData &data)
 
 void QMC5883P::startCalibration()
 {
+    // Reset min/max for 3-axis collection
     minV[0]=minV[1]=minV[2]=1e9f;
     maxV[0]=maxV[1]=maxV[2]=-1e9f;
+
+    m_collecting  = true;
+    m_sampleCount = 0;
 }
 
 
-// Collect min/max for each axis
+// Collect min/max for each axis during calibration
 void QMC5883P::updateCalibration(const MagData &d)
 {
+    if (!m_collecting)
+        return;
+
     if(d.x<minV[0]) minV[0]=d.x;
     if(d.y<minV[1]) minV[1]=d.y;
     if(d.z<minV[2]) minV[2]=d.z;
@@ -104,6 +114,15 @@ void QMC5883P::updateCalibration(const MagData &d)
     if(d.x>maxV[0]) maxV[0]=d.x;
     if(d.y>maxV[1]) maxV[1]=d.y;
     if(d.z>maxV[2]) maxV[2]=d.z;
+
+    m_sampleCount++;
+
+    // Auto-finish when enough samples collected
+    if (m_sampleCount >= CALIB_TARGET_SAMPLES)
+    {
+        finishCalibration();
+        m_collecting = false;
+    }
 }
 
 

@@ -2,7 +2,6 @@
 #include "task_Control.hpp"
 #include "task_Display.hpp"
 #include "task_Communication.hpp"
-#include "uart3Driver.hpp"
 #include "board.hpp"
 
 extern void MX_GPIO_Init(void);
@@ -55,8 +54,6 @@ void init_drv_Main(void)
   if (!Board::init()) {
         Error_Handler();
     }
-  
-	
 }
 
 void create_application_tasks(void)

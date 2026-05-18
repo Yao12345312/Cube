@@ -27,12 +27,20 @@ osMessageQueueId_t g_dispSensorQueue = NULL;
 osSemaphoreId_t g_controlModeSem = NULL;
 uint8_t g_selected_control_mode = 0xFF;  // No default mode, requires user selection
 
+// Calibration semaphore and globals
+osSemaphoreId_t g_calibSem = NULL;
+uint8_t g_calib_command = 0;              // 0=idle, 1=gyro, 2=mag
+bool g_gyro_calibrated = false;
+bool g_mag_calibrated = false;
+
+float z_axis_Compensation =0.35f;
+	
 namespace {
-static inline float AngleDiffRad(float a, float b)
-{
-    // Wrap angle difference to [-pi, pi] using atan2
-    return atan2f(sinf(a - b), cosf(a - b));
-}
+	static inline float AngleDiffRad(float a, float b)
+	{
+		// Wrap angle difference to [-pi, pi] using atan2
+		return atan2f(sinf(a - b), cosf(a - b));
+	}
 } // namespace
 
 
@@ -46,6 +54,7 @@ static void SingleSideBalanceControl(
     int32_t *esc_current_cmd,
     uint32_t &calib_counter,
     uint32_t &arm_counter,
+	uint32_t &adjust_counter,
     bool &control_armed)
 {
     const float max_balance_angle = 0.15f;
@@ -103,7 +112,7 @@ static void SingleSideBalanceControl(
             // Speed feedback: angle correction from wheel speed
             float theta_corr = theta[0] - K_lqr[0][2] * wheel_speed[0];
 
-            float u = LQR_Compute(theta_corr, theta_dot[0], wheel_speed[0], ESC1_Index);
+            float u = LQR_Compute(theta_corr,theta[0], theta_dot[0], wheel_speed[0], ESC1_Index);
 
             esc_current_cmd[0] = (int32_t)(u * 1000.0f);
         }
@@ -126,21 +135,22 @@ static void SinglePointBalanceControl(
     int32_t *esc_current_cmd,
     uint32_t &calib_counter,
     uint32_t &arm_counter,
+	uint32_t &adjust_counter,
     bool &control_armed)
 {
     const float max_balance_angle = 0.15f;
     const float arm_angle         = 0.07f;
     const float arm_rate          = 0.5f;
     const uint32_t arm_count_need = 20U;
-
-    const float bias_k = 0.002f;     // Learning rate
-    const float bias_leak = 0.001f;  // Leak term to prevent drift
-    const float bias_limit = 0.1f;   // Integral clamp
-
-    // X/Y axis adaptive bias
+	
+	const float bias_k = 0.0002f;     // Learning rate
+    const float bias_leak = 0.0001f;  // Leak term to prevent drift
+    const float bias_limit = 0.02f;   // Integral clamp
+	
+	// X/Y axis adaptive bias
     static float theta_bias_x = 0.0f;
     static float theta_bias_y = 0.0f;
-
+	
     // All three ESCs must be calibrated
     if (!(esc_status[ESC1_Index].calib_flag &&
           esc_status[ESC2_Index].calib_flag &&
@@ -194,44 +204,62 @@ static void SinglePointBalanceControl(
         esc_current_cmd[2] = 0;
         control_armed = false;
         arm_counter = 0;
+		
+		adjust_counter = 0;
+		theta_bias_x = 0.0f;
+		theta_bias_y = 0.0f;
+		
         esc_node.send_esc_current_commands(esc_current_cmd, 3);
         return;
     }
-
-    // Adaptive bias estimation: wheel-speed-driven learning
-    if (fabsf(wheel_speed[0]) > 300 &&
-        fabsf(wheel_speed[2]) > 300)
-    {
-        // Angle bias integral from wheel speed
-        theta_bias_x += bias_k * wheel_speed[0] - bias_leak * theta_bias_x;
-        theta_bias_y += bias_k * wheel_speed[2] - bias_leak * theta_bias_y;
-
-        // Integral clamp
-        theta_bias_x = fminf(fmaxf(theta_bias_x, -bias_limit), bias_limit);
-        theta_bias_y = fminf(fmaxf(theta_bias_y, -bias_limit), bias_limit);
-    }
-
-
-    // Get XY angles (with adaptive bias)
-    const float theta_x = theta[1];
-    const float theta_y = theta[2];
-
-    // Speed feedback mixed into angle error
+	
+//	if (fabsf(wheel_speed[0]) > 500 &&
+//        fabsf(wheel_speed[1]) > 500 )
+//    {
+//		adjust_counter++;
+//		
+//		if(adjust_counter> 1000)
+//		{
+//			
+//		adjust_counter = 1000;
+//		// Angle bias integral from wheel speed
+//        theta_bias_x += bias_k * wheel_speed[0] - bias_leak * theta_bias_x;
+//        theta_bias_y += bias_k * wheel_speed[2] - bias_leak * theta_bias_y;
+//		
+//        // Integral clamp
+//        theta_bias_x = fminf(fmaxf(theta_bias_x, -bias_limit), bias_limit);
+//        theta_bias_y = fminf(fmaxf(theta_bias_y, -bias_limit), bias_limit);
+//		
+//		}	
+//    }
+	
+    // LQR feedback + Feedforward
+    const float theta_x = theta[1];// - theta_bias_x;
+    const float theta_y = theta[2];// - theta_bias_y;
+	
     const float theta_corr_x =  theta_x - K_lqr[ESC1_Index][2] * wheel_speed[0] - K_lqr[ESC2_Index][2] * wheel_speed[1];
     const float theta_corr_y = -theta_y - K_lqr[ESC3_Index][2] * wheel_speed[2] - K_lqr[ESC2_Index][2] * wheel_speed[1];
     const float theta_corr_z = -K_lqr[ESC2_Index][2] * wheel_speed[1];
-
-    // LQR control outputs
-    const float out_x =  LQR_Compute(theta_corr_x, theta_dot[0], wheel_speed[0], ESC1_Index);
-    const float out_y =  LQR_Compute(theta_corr_y, theta_dot[1], wheel_speed[2], ESC3_Index);
-    const float out_z =  LQR_Compute(theta_corr_z, theta_dot[2], wheel_speed[1], ESC2_Index);
-
-
-    // Map to ESCs
-    esc_current_cmd[0] = (int32_t)(out_x * 1000.0f);
-    esc_current_cmd[1] = (int32_t)(out_z * 1000.0f);
-    esc_current_cmd[2] = (int32_t)(out_y * 1000.0f);
-
+	
+    float out_x = LQR_Compute(theta_corr_x, (theta[1]-2.35f),theta_dot[0], wheel_speed[0], ESC1_Index);
+    float out_z = LQR_Compute(theta_corr_z, 0.0f, theta_dot[2], wheel_speed[1], ESC2_Index);
+    float out_y = LQR_Compute(theta_corr_y, -(theta[2]-0.64f), theta_dot[1], wheel_speed[2], ESC3_Index);
+	
+	adjust_counter++;
+	
+	if(adjust_counter < 1000)
+	{
+	    esc_current_cmd[0] = (int32_t)(out_x * 1000.0f);
+		esc_current_cmd[1] = (int32_t)(out_z * 1000.0f);
+		esc_current_cmd[2] = (int32_t)(out_y * 1000.0f);
+	}
+	else
+	{
+		esc_current_cmd[0] = (int32_t)((out_x+z_axis_Compensation) * 1000.0f);
+		esc_current_cmd[1] = (int32_t)((out_z+z_axis_Compensation) * 1000.0f);
+		esc_current_cmd[2] = (int32_t)((out_y+z_axis_Compensation) * 1000.0f);
+	}
+	
     esc_node.send_esc_current_commands(esc_current_cmd, 3);
 }
 
@@ -240,7 +268,7 @@ void StartControlTask(void *argument)
     osDelay(100);
     printf("Control Task Started!\r\n");
 
-    static MahonyAHRS ahrs(200.0f, 2.0f, 0.001f);
+    static MahonyAHRS ahrs(500.0f, 2.0f, 0.001f);
 
     // Get driver wrappers
     auto &imu = Board::getImu();
@@ -261,6 +289,8 @@ void StartControlTask(void *argument)
     uint32_t log_counter = 0;
     uint32_t calib_counter = 0;
     uint32_t arm_counter = 0;
+	uint32_t adjust_counter = 0;
+	
     bool control_armed = false;
 
     // Mechanical equilibrium angles (rad)
@@ -272,10 +302,6 @@ void StartControlTask(void *argument)
 
     // System tick
     uint32_t next_wake = osKernelGetTickCount();
-
-    // IMU static bias calibration
-    imu.calibrateAllStatic();
-
 
     g_mavSensorQueue = osMessageQueueNew(8, sizeof(MavSensorData_t), NULL);
     g_dispSensorQueue = osMessageQueueNew(4, sizeof(MavSensorData_t), NULL);
@@ -290,6 +316,12 @@ void StartControlTask(void *argument)
         Error_Handler();
     }
 
+    g_calibSem = osSemaphoreNew(1, 0, NULL);
+    if (g_calibSem == NULL) {
+        printf("Failed to create calibration semaphore!\r\n");
+        Error_Handler();
+    }
+
     while (1) {
 
         // AHRS attitude update
@@ -301,8 +333,39 @@ void StartControlTask(void *argument)
         // X_acc = -X_mag, Y_acc = -Y_mag, Z_acc = Z_mag
         mag.readRaw(magData);
         mag.convertMagFrame(magData);
+		
+		
+        // Update magnetometer calibration collection (if active)
+        // Collects on coordinate-transformed but un-calibrated data
+        {
+            static bool calib_was_collecting = false;
+            mag.updateCalibration(magData);
+            if (calib_was_collecting && !mag.isCollecting())
+            {
+                // Collection just finished (reached target sample count)
+                g_mag_calibrated = true;
+            }
+            calib_was_collecting = mag.isCollecting();
+        }
 
-        // AHRS fusion (mag data must be in same frame as accel/gyro)
+        // Apply hard/soft iron calibration to mag data (only if calibrated)
+        if(g_mag_calibrated)
+        {
+            float ox, oy, oz;
+            mag.getOffset(ox, oy, oz);
+            float m[3][3];
+            mag.getMatrix(m);
+
+            float x = magData.x - ox;
+            float y = magData.y - oy;
+            float z = magData.z - oz;
+
+            magData.x = m[0][0]*x + m[0][1]*y + m[0][2]*z;
+            magData.y = m[1][0]*x + m[1][1]*y + m[1][2]*z;
+            magData.z = m[2][0]*x + m[2][1]*y + m[2][2]*z;
+        }
+
+        // AHRS fusion 
         ahrs.update(
             gx * DEG_TO_RAD,
             gy * DEG_TO_RAD,
@@ -335,7 +398,7 @@ void StartControlTask(void *argument)
                 sensor_data.yawspeed = gz * DEG_TO_RAD;
                 sensor_data.voltage = ina226.INA226_ReadBusVoltage();
                 sensor_data.current = -1.0f;
-                sensor_data.battery_remaining = -1;
+                sensor_data.battery_remaining = 0;
                 osMessageQueuePut(g_mavSensorQueue, &sensor_data, 0, 0);
                 osMessageQueuePut(g_dispSensorQueue, &sensor_data, 0, 0);
             }}
@@ -387,6 +450,7 @@ void StartControlTask(void *argument)
                 esc_current_cmd,
                 calib_counter,
                 arm_counter,
+				adjust_counter,
                 control_armed);
         }
         else if(g_selected_control_mode == 1)
@@ -401,6 +465,7 @@ void StartControlTask(void *argument)
                 esc_current_cmd,
                 calib_counter,
                 arm_counter,
+				adjust_counter,
                 control_armed);
         }
         else
@@ -412,6 +477,28 @@ void StartControlTask(void *argument)
             esc_node.send_esc_current_commands(esc_current_cmd, 3);
             control_armed = false;
             arm_counter = 0;
+			adjust_counter=0;
+        }
+
+        // ---------- Calibration command handling ----------
+        if(g_calibSem != NULL)
+        {
+            if(osSemaphoreAcquire(g_calibSem, 0) == osOK)
+            {
+                if(g_calib_command == 1)
+                {
+                    // Gyroscope calibration
+                    imu.calibrateAllStatic();
+                    g_gyro_calibrated = true;
+                }
+                else if(g_calib_command == 2)
+                {
+                    // Magnetometer calibration: start 3-axis collection
+                    mag.startCalibration();
+                    g_mag_calibrated = false;  // will be set true when collection finishes
+                }
+                g_calib_command = 0;
+            }
         }
 
         // LOG (disabled)
@@ -420,15 +507,15 @@ void StartControlTask(void *argument)
 //                   (long)esc_status[ESC1_Index].rpm,
 //                   (long)esc_status[ESC2_Index].rpm,
 //                   (long)esc_status[ESC3_Index].rpm,
-//                   (float)gx,
-//                   (float)gy,
-//                   (float)gz,
+//                   (float)ax,
+//                   (float)ay,
+//                   (float)az,
 //                   (float)theta[1],
 //                   (float)theta[2],
 //                   (float)yaw);
 //        }
 
-        next_wake += 5U;  // 200Hz
+        next_wake += 2U;  // 500Hz
         osDelayUntil(next_wake);
     }
 }

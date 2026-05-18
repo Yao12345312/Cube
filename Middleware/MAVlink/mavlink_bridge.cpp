@@ -120,7 +120,7 @@ void SendHeartbeat(void)
     uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint32_t custom_mode = 0;
 
-    // system_status：一般发 MAV_STATE_ACTIVE
+    // system_status： MAV_STATE_ACTIVE
     uint8_t system_status = MAV_STATE_ACTIVE;
 
     // 打包 HEARTBEAT 消息
@@ -160,7 +160,7 @@ void SendBatteryStatus(float voltage_v,
     uint8_t id = 0;
     uint8_t battery_function = MAV_BATTERY_FUNCTION_ALL;
     uint8_t type = MAV_BATTERY_TYPE_LIPO;
-
+	
     mavlink_msg_battery_status_pack(
         mav_sysid,
         mav_compid,
