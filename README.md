@@ -1,2 +1,0 @@
-**Project Description**
-Designed and implemented a three-axis reaction wheel self-balancing cube system based on the STM32H743 (Cortex-M7, 200MHz) and FreeRTOS real-time operating system. The project includes RTOS multitasking architecture design, OLED graphical user interface, driver development for multiple low-level communication protocols (DroneCAN/MAVLink/Bluetooth/SPI/I2C/UART/CAN), and an PID+AHRS real-time control algorithm.
