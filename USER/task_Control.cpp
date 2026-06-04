@@ -27,9 +27,9 @@ osMessageQueueId_t g_mavSensorQueue = NULL;
 osMessageQueueId_t g_dispSensorQueue = NULL;
 
 osSemaphoreId_t g_controlModeSem = NULL;
-uint8_t g_selected_control_mode = 0xFF;  // No default mode, requires user selection
+uint8_t g_selected_control_mode = 0xFF;  //模式切换标志位，无任务为0xFF
 
-// Calibration semaphore and globals
+//校准状态全局变量
 osSemaphoreId_t g_calibSem = NULL;
 uint8_t g_calib_command = 0;              // 0=idle, 1=gyro, 2=mag
 bool g_gyro_calibrated = false;
@@ -48,7 +48,7 @@ namespace {
 } // namespace
 
 
-// Single side balance control (1-axis, ESC1 only)
+//单边控制（ESC1）
 static void SingleSideBalanceControl(
     ESCNode &esc_node,
     ESCNode::ESCStatusCache esc_status[],
@@ -60,19 +60,20 @@ static void SingleSideBalanceControl(
     uint32_t &arm_counter,
 	uint32_t &adjust_counter,
     bool &control_armed)
-{
+{	
+	auto& buzzer = Board::getBuzzer();
+	
     const float max_balance_angle = 0.20f;
-    const float arm_angle = 0.20f;
+    const float arm_angle = 0.10f;
     const float arm_rate = 0.5f;
     const uint32_t arm_count_need = 20U;
 
     const float bias_gain = 0.0001f;
 
-    // Balance angle bias (adaptive)
+    //自适应重心变量
     static float theta_bias = 0.0f;
 
-    // ========================= Calibration & Arm Logic =========================
-    // ESC not calibrated
+    //如果电调没校准，则校准
     if (!esc_status[ESC1_Index].calib_flag)
 	{
         esc_current_cmd[0] = 0;
@@ -88,7 +89,7 @@ static void SingleSideBalanceControl(
 	{
         calib_counter = 0;
 
-        // Not armed yet
+        //未解锁
         if (!control_armed) {
             if (fabsf(theta[0]) < arm_angle ) {
                 arm_counter++;
@@ -98,19 +99,20 @@ static void SingleSideBalanceControl(
             }
 
             if (arm_counter >= arm_count_need) {
+				buzzer.beep(500,200);
                 control_armed = true;
             }
 
             esc_current_cmd[0] = 0;
         }
-        // Out of balance range -> disarm
+        //角度超过可控制范围，上锁
         else if (fabsf(theta[0]) > max_balance_angle) {
             esc_current_cmd[0] = 0;
             control_armed = false;
             arm_counter = 0;
         }
         else {
-            // Adaptive bias estimation (near equilibrium, low speed)
+            //稳定状态下积分消除重心偏差
             if (fabsf(theta[0]) < 0.05f &&
                 fabsf(theta_dot[0]) < 0.1f &&
                 fabsf(wheel_speed[0]) < 800.0f)
@@ -118,23 +120,23 @@ static void SingleSideBalanceControl(
                 theta_bias += bias_gain * theta[0];
             }
 
-            // Speed feedback: angle correction from wheel speed
+            //速度反馈
             float theta_corr = theta[0] - K_lqr[0][2] * wheel_speed[0];
 
             float u = LQR_Compute(theta_corr,theta[0], theta_dot[0], wheel_speed[0], ESC1_Index);
 
             esc_current_cmd[0] = (int32_t)(u * 1000.0f);
         }
-        // Always send command
+        //发送电调油门指令
         esc_node.send_esc_current_commands(esc_current_cmd, 3);
     }
 }
 
-// Three point balance control (3-axis, ESC1/2/3)
-// theta[1]: X-axis angle (roll)
-// theta[2]: Y-axis angle (pitch)
-// theta_dot[0]: X-axis angular rate
-// theta_dot[1]: Y-axis angular rate
+//三轴单点平衡
+// theta[1]: X轴角度
+// theta[2]: Y轴角度
+// theta_dot[0]: X轴角速度
+// theta_dot[1]: Y轴角速度
 static void SinglePointBalanceControl(
     ESCNode &esc_node,
     ESCNode::ESCStatusCache esc_status[],
@@ -146,21 +148,22 @@ static void SinglePointBalanceControl(
     uint32_t &arm_counter,
 	uint32_t &adjust_counter,
     bool &control_armed)
-{
-    const float max_balance_angle = 0.15f;
-    const float arm_angle         = 0.07f;
-    const float arm_rate          = 0.5f;
-    const uint32_t arm_count_need = 10U;
+{	
+	auto& buzzer = Board::getBuzzer();
 	
-	const float bias_k = 0.0002f;     // Learning rate
-    const float bias_leak = 0.0001f;  // Leak term to prevent drift
-    const float bias_limit = 0.02f;   // Integral clamp
+    const float max_balance_angle = 0.20f;
+    const float arm_angle         = 0.02f;
+    const uint32_t arm_count_need = 20U;
 	
-	// X/Y axis adaptive bias
+	const float bias_k = 0.0002f;     //重心适应学习率
+    const float bias_leak = 0.0001f;  
+    const float bias_limit = 0.02f;   //积分限幅
+	
+	// X/Y轴角度偏差
     static float theta_bias_x = 0.0f;
     static float theta_bias_y = 0.0f;
 	
-    // All three ESCs must be calibrated
+    // 如果电机未校准，停止输出，进行校准
     if (!(esc_status[ESC1_Index].calib_flag &&
           esc_status[ESC2_Index].calib_flag &&
           esc_status[ESC3_Index].calib_flag))
@@ -181,7 +184,7 @@ static void SinglePointBalanceControl(
     }
     calib_counter = 0;
 
-    // Not armed: wait for small angles to arm
+    // 到平衡点附近解锁控制
     if (!control_armed)
     {
         if (fabsf(theta[1]) < arm_angle &&
@@ -194,7 +197,8 @@ static void SinglePointBalanceControl(
             arm_counter = 0;
         }
         if (arm_counter >= arm_count_need)
-        {
+        {	
+			buzzer.beep(500,200);
             control_armed = true;
         }
         esc_current_cmd[0] = 0;
@@ -204,7 +208,7 @@ static void SinglePointBalanceControl(
         return;
     }
 
-    // Out of balance range -> disarm
+    // 超过可控角度限制，上锁
     if (fabsf(theta[1]) > max_balance_angle ||
         fabsf(theta[2]) > max_balance_angle)
     {
@@ -242,7 +246,7 @@ static void SinglePointBalanceControl(
 //		}	
 //    }
 	
-    // LQR feedback + Feedforward
+    // LQR + 前馈控制
     const float theta_x = theta[1];// - theta_bias_x;
     const float theta_y = theta[2];// - theta_bias_y;
 	
@@ -286,8 +290,6 @@ static void SingleSideJumpBalanceControl(
 {
     const float max_balance_angle = 0.20f;
 	
-    // ========================= Calibration & Arm Logic =========================
-    // ESC not calibrated
     if (!esc_status[ESC1_Index].calib_flag)
 	{
         esc_current_cmd[0] = 0;
@@ -303,23 +305,21 @@ static void SingleSideJumpBalanceControl(
 	{
         calib_counter = 0;
 		
-        // Out of balance range -> disarm
+
         if (fabsf(theta[0]) > max_balance_angle) {
             esc_current_cmd[0] = 0;
             control_armed = false;
             arm_counter = 0;
         }
         else {
-            // Adaptive bias estimation (near equilibrium, low speed)
 
-            // Speed feedback: angle correction from wheel speed
             float theta_corr = theta[0] - K_lqr[0][2] * wheel_speed[0];
 
             float u = LQR_Compute(theta_corr,theta[0], theta_dot[0], wheel_speed[0], ESC1_Index);
 
             esc_current_cmd[0] = (int32_t)(u * 1000.0f);
         }
-        // Always send command
+
         esc_node.send_esc_current_commands(esc_current_cmd, 3);
     }
 }
@@ -331,19 +331,19 @@ void StartControlTask(void *argument)
 
     static MahonyAHRS ahrs(500.0f, 2.0f, 0.001f);
 
-    // Get driver wrappers
+    // 获取驱动接口
     auto &imu = Board::getImu();
     auto &mag = Board::getQMC5883P();
     auto &esc_node = Board::getESCNode();
     auto &ina226 = Board::getINA226();
-
-    // Sensor data variables
+	
+    //传感器数据变量
     float ax = 0.0f, ay = 0.0f, az = 0.0f;
     float gx = 0.0f, gy = 0.0f, gz = 0.0f;
     QMC5883P::MagData magData;
     float roll = 0.0f, pitch = 0.0f, yaw = 0.0f;
 
-    // ESC status and commands
+    //电调状态
     ESCNode::ESCStatusCache esc_status[Max_ESC_Num] = {0};
     int32_t esc_current_cmd[3] = {0};
 
@@ -354,14 +354,14 @@ void StartControlTask(void *argument)
 	
     bool control_armed = false;
 
-    // Mechanical equilibrium angles (rad)
+    //机械中点
     const float mechanics_medium[3] = {
-        -2.35f,  // X-axis side 1
-        -2.35f,  // X-axis side 2
-        -0.64f   // Y-axis
+        -2.35f,  // 单边X轴
+        -2.35f,  // 单点X轴
+        -0.64f   // 单点Y轴
     };
 
-    // System tick
+    //系统时间戳
     uint32_t next_wake = osKernelGetTickCount();
 
     g_mavSensorQueue = osMessageQueueNew(8, sizeof(MavSensorData_t), NULL);
@@ -387,19 +387,18 @@ void StartControlTask(void *argument)
 		
 		//cpu_usage = GetCPUUsage();
 		
-        // AHRS attitude update
+        //获取校准后的IMU数据
         imu.getAccelDataCalibrated(ax, ay, az);
         imu.getGyroDataCalibrated(gx, gy, gz);
 		
-        // Read magnetometer and transform to BMI088 coordinate frame
+        // 获取磁力计数据
         // QMC5883P -> BMI088: 180 deg CW around Z-axis
         // X_acc = -X_mag, Y_acc = -Y_mag, Z_acc = Z_mag
         mag.readRaw(magData);
         mag.convertMagFrame(magData);
 		
 		
-        // Update magnetometer calibration collection (if active)
-        // Collects on coordinate-transformed but un-calibrated data
+		//传感器校准状态判断
         {
             static bool calib_was_collecting = false;
             mag.updateCalibration(magData);
@@ -411,7 +410,7 @@ void StartControlTask(void *argument)
             calib_was_collecting = mag.isCollecting();
         }
 
-        // Apply hard/soft iron calibration to mag data (only if calibrated)
+        //磁力计硬铁/软铁校准
         if(g_mag_calibrated)
         {
             float ox, oy, oz;
@@ -428,7 +427,7 @@ void StartControlTask(void *argument)
             magData.z = m[2][0]*x + m[2][1]*y + m[2][2]*z;
         }
 
-        // AHRS fusion 
+        //更新互补滤波姿态解算
         ahrs.update(
             gx * DEG_TO_RAD,
             gy * DEG_TO_RAD,
@@ -438,7 +437,7 @@ void StartControlTask(void *argument)
             (float)magData.y,
             (float)magData.z);
 
-        // Get attitude
+        //获取姿态
         ahrs.getEulerRad(roll, pitch, yaw);
 
         if(osMutexAcquire(g_att_mutex, 0) == osOK)
@@ -449,7 +448,7 @@ void StartControlTask(void *argument)
             osMutexRelease(g_att_mutex);
 
 		
-            // Send sensor data to MAVLink queue (50Hz = every 4th iteration)
+            //传感器数据通过队列发送到通信任务
             static uint8_t sensor_send_counter = 0;
             if ((++sensor_send_counter % 4U) == 0U) {
                 MavSensorData_t sensor_data;
@@ -467,41 +466,40 @@ void StartControlTask(void *argument)
             }
 		}
 
-        // CAN send/receive
+        //CAN收发
         esc_node.spin_once();
 
-        // Get ESC status
+        //获取电调状态
         esc_node.get_esc_status(ESC1_Index, esc_status[ESC1_Index]);
         esc_node.get_esc_status(ESC2_Index, esc_status[ESC2_Index]);
         esc_node.get_esc_status(ESC3_Index, esc_status[ESC3_Index]);
 
-        // Compute angle errors from mechanical equilibrium
-        // theta[0]: X-axis side 1, theta[1]: X-axis side 2, theta[2]: Y-axis
+        //反正切计算角度偏差（弧度制）
         const float theta[3] = {
             (float)AngleDiffRad(roll, mechanics_medium[0]),
             (float)AngleDiffRad(roll, mechanics_medium[1]),
             (float)AngleDiffRad(pitch, mechanics_medium[2])
         };
 
-        // Angular rates (rad/s)
+        //角速度（rad/s）
         const float theta_dot[3] = {
             (float)(gx * DEG_TO_RAD),
             (float)(gy * DEG_TO_RAD),
             (float)(gz * DEG_TO_RAD)
         };
 
-        // Wheel speeds (rpm)
+        //轮速（rpm）
         const int32_t wheel_speed[3] = {
             esc_status[ESC1_Index].rpm,
             esc_status[ESC2_Index].rpm,
             esc_status[ESC3_Index].rpm
         };
 
-        // Check for control mode change signal from menu
+        // 获取显示任务信号量，通知进入控制模式
         if(g_controlModeSem != NULL)
             osSemaphoreAcquire(g_controlModeSem, 0);
-
-        
+		
+		//模式1：单边
         if(g_selected_control_mode == 0)
         {
             
@@ -517,9 +515,10 @@ void StartControlTask(void *argument)
 				adjust_counter,
                 control_armed);
         }
+		//模式2：单点
         else if(g_selected_control_mode == 1)
         {
-					
+			
 	    	SinglePointBalanceControl(
                 esc_node,
                 esc_status,
@@ -534,7 +533,7 @@ void StartControlTask(void *argument)
              
 					
 		}
-           
+        //模式3：单边起跳
         else if(g_selected_control_mode == 2)
         {
             static uint8_t  jump_state = 0;
@@ -577,6 +576,7 @@ void StartControlTask(void *argument)
                     adjust_counter, control_armed);
             }
         }
+		//模式4：单点起跳
         else if(g_selected_control_mode == 3)
         {
 			
@@ -588,6 +588,7 @@ void StartControlTask(void *argument)
             arm_counter = 0;
             adjust_counter = 0;
         }
+		//不在控制模式，油门置0
         else
         {
             
@@ -600,20 +601,20 @@ void StartControlTask(void *argument)
 			adjust_counter=0;
         }
 
-        // У׼ģʽ
+        //校准状态判断
         if(g_calibSem != NULL)
         {
             if(osSemaphoreAcquire(g_calibSem, 0) == osOK)
             {
                 if(g_calib_command == 1)
                 {
-                    //������У׼
+                    //IMU零偏校准
                     imu.calibrateAllStatic();
                     g_gyro_calibrated = true;
                 }
                 else if(g_calib_command == 2)
                 {
-                    //������У׼
+                    //磁力计校准
                     mag.startCalibration();
                     g_mag_calibrated = false;  
                 }
@@ -621,7 +622,7 @@ void StartControlTask(void *argument)
             }
         }
 
-        // LOG (disabled)
+        // 串口3日志输出
 //        if ((log_counter++ % 10U) == 0U) {
 //            printf("%ld,%ld,%ld,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\r\n",
 //                   (long)esc_status[ESC1_Index].rpm,

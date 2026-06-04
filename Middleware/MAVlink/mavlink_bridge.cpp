@@ -117,7 +117,7 @@ namespace MAVLink {
 
 void SendHeartbeat(void)
 {	
-	// Rate limit heartbeat to 1Hz
+	// 发送节流至1HZ
 	static uint32_t last_send_tick = 0;
 	uint32_t now = osKernelGetTickCount();
 	if ((now - last_send_tick) < 1000U) {
@@ -164,7 +164,16 @@ void SendHeartbeat(void)
 void SendBatteryStatus(float voltage_v,
                        float current_a,
                        int8_t battery_remaining)
-{
+{	
+	//发送节流至1HZ
+	static uint32_t last_send_tick = 0;
+	uint32_t now = osKernelGetTickCount();
+	if ((now - last_send_tick) < 1000U) {
+		return;
+	}
+	
+	last_send_tick = now;
+	
     auto& uart = Board::getUart1();
 
     mavlink_message_t msg;

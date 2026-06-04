@@ -28,19 +28,19 @@ public:
      */
     Key(GPIO_TypeDef* port,
         uint16_t pin,
-        ActiveLevel activeLevel = ActiveLevel::Low,  // 默认低电平有效（常用）
-        uint32_t longPressTime = 1000,
+        ActiveLevel activeLevel = ActiveLevel::Low,  // 默认低电平有效
+        uint32_t longPressTime = 500,
         uint32_t debounceTime = 50);
     
     ~Key();
     
     /**
-     * @brief 更新按键状态（必须在固定周期调用，建议10ms）
+     * @brief 更新按键状态,固定周期调用
      */
     void update();
     
     /**
-     * @brief 获取按键事件（获取后自动清除）
+     * @brief 获取按键事件,获取后自动清除
      */
     Event getEvent();
     

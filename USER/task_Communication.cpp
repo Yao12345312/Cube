@@ -6,13 +6,13 @@
 #include <string>
 #include <cstdio>
 
-// ����������
+//定义任务句柄
 osThreadId_t communicationTaskHandle = NULL;
 
-// ������������
+// 定义任务属性
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
-    .stack_size = 4 * 1024,      // ͨ������ջ��С
+    .stack_size = 4 * 1024,      // 4K
     .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -25,12 +25,11 @@ extern SD_HandleTypeDef hsd1;
 
 extern osMessageQueueId_t g_mavSensorQueue;
 
-//SD�����ٲ��Ժ���
+//SD卡测试函数
 void SD_Test(void)
 {
     uint32_t blockAddr = 0;
 
-    // ����������
     for (int i = 0; i < BLOCK_SIZE; i++)
     {
         txBuf[i] = i;
@@ -56,7 +55,7 @@ void SD_Test(void)
 
     while (HAL_SD_GetCardState(&hsd1) != HAL_SD_CARD_TRANSFER);
 
-    // У��
+    //判断写入和回读的值是否相同，如果相同测试成功
     for (int i = 0; i < BLOCK_SIZE; i++)
     {
         if (txBuf[i] != rxBuf[i])
@@ -69,15 +68,14 @@ void SD_Test(void)
     printf("SD Test OK!\r\n");
 }
 
-// ͨ��������ں���
+// 定义任务函数
 void StartCommunicationTask(void *argument)
 {
 	MAVLink::Init();
     
-    // ��ӡ������Ϣ
     printf("Communication Task Started!\r\n");
     
-    // ��ȡӲ�����ʽӿ�
+    //驱动对象获取
     auto& bluetooth = Board::getBluetooth();
     auto& uart = Board::getUart1();
 	auto& buzzer=Board::getBuzzer();
@@ -85,17 +83,16 @@ void StartCommunicationTask(void *argument)
 	auto& led = Board::getLedPwm();
 	
 	uint32_t next_wake = osKernelGetTickCount();
-	//�ϵ��������ʾ
+	//蜂鸣器提示
 	//buzzer.beep(2000,100);
-	
-	//û��TF����ʱ��ע�ͣ�����HAL����ʼ��ʧ��
+
 //  SD_Test();
 		 
 	if(!bluetooth.autoBaudScan())
 	{
 	Error_Handler();
 	}
-	//MAVLink��װ֡
+	//MAVLink数据定义
 	MavRxFrame_t frame;
     uint32_t last_heartbeat = 0;
     uint32_t now;
@@ -105,7 +102,7 @@ void StartCommunicationTask(void *argument)
 
 while (1) {
 
-		// MAVLink receive
+		//队列获取串口数据（透传模式下）
 	    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
 	            MAVLink::ParseData(frame.data, frame.len);
 	        }
@@ -113,7 +110,7 @@ while (1) {
 		if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
 			else{led.setRGBBlink(100,0,0,1);}
 
-		// Receive sensor data and send MAVLink messages
+		// 获取传感器数据，打包发送
 		if (g_mavSensorQueue != NULL) {
 		    MavSensorData_t sensor_data;
 		    if (osMessageQueueGet(g_mavSensorQueue, &sensor_data, NULL, 0) == osOK) {
@@ -137,7 +134,7 @@ while (1) {
 
 		MAVLink::SendHeartbeat();
 
-	        next_wake += 100U;  //10Hz
+	        next_wake += 20U;  //50Hz
 	        osDelayUntil(next_wake);
 	    }
 }
