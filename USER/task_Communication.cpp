@@ -6,13 +6,13 @@
 #include <string>
 #include <cstdio>
 
-// ¶¨ÒåÈÎÎñ¾ä±ú
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 osThreadId_t communicationTaskHandle = NULL;
 
-// ¶¨ÒåÈÎÎñÊôĞÔ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
-    .stack_size = 4 * 1024,      // Í¨ĞÅÈÎÎñÕ»´óĞ¡
+    .stack_size = 4 * 1024,      // Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ»ï¿½ï¿½Ğ¡
     .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -25,12 +25,12 @@ extern SD_HandleTypeDef hsd1;
 
 extern osMessageQueueId_t g_mavSensorQueue;
 
-//SD¿¨¿ìËÙ²âÊÔº¯Êı
+//SDï¿½ï¿½ï¿½ï¿½ï¿½Ù²ï¿½ï¿½Ôºï¿½ï¿½ï¿½
 void SD_Test(void)
 {
     uint32_t blockAddr = 0;
 
-    // Ìî³ä²âÊÔÊı¾İ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for (int i = 0; i < BLOCK_SIZE; i++)
     {
         txBuf[i] = i;
@@ -56,7 +56,7 @@ void SD_Test(void)
 
     while (HAL_SD_GetCardState(&hsd1) != HAL_SD_CARD_TRANSFER);
 
-    // Ğ£Ñé
+    // Ğ£ï¿½ï¿½
     for (int i = 0; i < BLOCK_SIZE; i++)
     {
         if (txBuf[i] != rxBuf[i])
@@ -69,15 +69,15 @@ void SD_Test(void)
     printf("SD Test OK!\r\n");
 }
 
-// Í¨ĞÅÈÎÎñÈë¿Úº¯Êı
+// Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úºï¿½ï¿½ï¿½
 void StartCommunicationTask(void *argument)
 {
 	MAVLink::Init();
     
-    // ´òÓ¡Æô¶¯ĞÅÏ¢
+    // ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
     printf("Communication Task Started!\r\n");
     
-    // »ñÈ¡Ó²¼ş·ÃÎÊ½Ó¿Ú
+    // ï¿½ï¿½È¡Ó²ï¿½ï¿½ï¿½ï¿½ï¿½Ê½Ó¿ï¿½
     auto& bluetooth = Board::getBluetooth();
     auto& uart = Board::getUart1();
 	auto& buzzer=Board::getBuzzer();
@@ -85,17 +85,17 @@ void StartCommunicationTask(void *argument)
 	auto& led = Board::getLedPwm();
 	
 	uint32_t next_wake = osKernelGetTickCount();
-	//ÉÏµç·äÃùÆ÷ÌáÊ¾
+	//ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 	//buzzer.beep(2000,100);
 	
-	//Ã»²åTF¿¨µÄÊ±ºò×¢ÊÍ£¬·ñÔòHAL¿â»á³õÊ¼»¯Ê§°Ü
+	//Ã»ï¿½ï¿½TFï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½×¢ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½HALï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ê§ï¿½ï¿½
 //  SD_Test();
 		 
 	if(!bluetooth.autoBaudScan())
 	{
 	Error_Handler();
 	}
-	//MAVLink·â×°Ö¡
+	//MAVLinkï¿½ï¿½×°Ö¡
 	MavRxFrame_t frame;
     uint32_t last_heartbeat = 0;
     uint32_t now;
@@ -109,6 +109,7 @@ while (1) {
 	    if (osMessageQueueGet(uart.getMavQueue(), &frame, NULL, 0) == osOK) {
 	            MAVLink::ParseData(frame.data, frame.len);
 	        }
+		
 		if(MAVLink::get_mavlink_connect_status()){led.setRGBBlink(0,100,0,1);}
 			else{led.setRGBBlink(100,0,0,1);}
 
@@ -116,6 +117,7 @@ while (1) {
 		if (g_mavSensorQueue != NULL) {
 		    MavSensorData_t sensor_data;
 		    if (osMessageQueueGet(g_mavSensorQueue, &sensor_data, NULL, 0) == osOK) {
+				//å‘é€å§¿æ€
 		        MAVLink::SendAttitude(
 		            sensor_data.roll,
 		            sensor_data.pitch,
@@ -124,6 +126,7 @@ while (1) {
 		            sensor_data.pitchspeed,
 		            sensor_data.yawspeed
 		        );
+				//å‘é€ç”µæ± çŠ¶æ€
 		        MAVLink::SendBatteryStatus(
 		            sensor_data.voltage,
 		            sensor_data.current,
@@ -134,7 +137,8 @@ while (1) {
 
 		MAVLink::SendHeartbeat();
 
-	        next_wake += 50U;  //20Hz
+	        next_wake += 100U;  //10Hz
 	        osDelayUntil(next_wake);
-	    }}
+	    }
+}
 

@@ -25,7 +25,7 @@ MenuState menu_mag_calib_page(void);
 
 // 控制模式选择信号量
 extern osSemaphoreId_t g_controlModeSem;
-extern uint8_t g_selected_control_mode;  // 0=单边控制, 1=单点控制
+extern uint8_t g_selected_control_mode;  // 0=单边控制, 1=单点控制, 2=单边起跳, 3=单点起跳
 
 // 校准信号量
 extern osSemaphoreId_t g_calibSem;

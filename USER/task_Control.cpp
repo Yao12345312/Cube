@@ -1,20 +1,22 @@
 #include "task_Control.hpp"
+#include "task_CPUMonitor.h"
 #include "esc_node.hpp"
 #include "board.hpp"
 #include "MahonyAHRS.hpp"
 #include "LQR_control.hpp"
 #include "attitute.hpp"
 
+
 #include <cmath>
 #include <cstdio>
 
-// Task handle
+// 定义任务句柄
 osThreadId_t controlTaskHandle = NULL;
 
-// Task attributes
+// 定义任务属性
 const osThreadAttr_t controlTask_attributes = {
     .name = "ControlTask",
-    .stack_size = 4 * 1024,
+    .stack_size = 8 * 1024,
     .priority = (osPriority_t)osPriorityHigh,
 };
 
@@ -33,8 +35,10 @@ uint8_t g_calib_command = 0;              // 0=idle, 1=gyro, 2=mag
 bool g_gyro_calibrated = false;
 bool g_mag_calibrated = false;
 
-float z_axis_Compensation =0.35f;
+static float z_axis_Compensation =0.35f;
 	
+static uint32_t cpu_usage = 0;
+
 namespace {
 	static inline float AngleDiffRad(float a, float b)
 	{
@@ -57,8 +61,8 @@ static void SingleSideBalanceControl(
 	uint32_t &adjust_counter,
     bool &control_armed)
 {
-    const float max_balance_angle = 0.15f;
-    const float arm_angle = 0.10f;
+    const float max_balance_angle = 0.20f;
+    const float arm_angle = 0.20f;
     const float arm_rate = 0.5f;
     const uint32_t arm_count_need = 20U;
 
@@ -69,22 +73,27 @@ static void SingleSideBalanceControl(
 
     // ========================= Calibration & Arm Logic =========================
     // ESC not calibrated
-    if (!esc_status[ESC1_Index].calib_flag) {
+    if (!esc_status[ESC1_Index].calib_flag)
+	{
         esc_current_cmd[0] = 0;
         control_armed = false;
         arm_counter = 0;
 
-        if ((calib_counter++ % 20U) == 0U) {
+        if ((calib_counter++ % 20U) == 0U)
+		{
             esc_node.calib_esc_command((ESC1_Index + 1));
         }
-    } else {
+    }
+	else 
+	{
         calib_counter = 0;
 
         // Not armed yet
         if (!control_armed) {
-            if (fabsf(theta[0]) < arm_angle && fabsf(theta_dot[0]) < arm_rate) {
+            if (fabsf(theta[0]) < arm_angle ) {
                 arm_counter++;
-            } else {
+            } 
+			else{
                 arm_counter = 0;
             }
 
@@ -141,7 +150,7 @@ static void SinglePointBalanceControl(
     const float max_balance_angle = 0.15f;
     const float arm_angle         = 0.07f;
     const float arm_rate          = 0.5f;
-    const uint32_t arm_count_need = 20U;
+    const uint32_t arm_count_need = 10U;
 	
 	const float bias_k = 0.0002f;     // Learning rate
     const float bias_leak = 0.0001f;  // Leak term to prevent drift
@@ -263,6 +272,58 @@ static void SinglePointBalanceControl(
     esc_node.send_esc_current_commands(esc_current_cmd, 3);
 }
 
+static void SingleSideJumpBalanceControl(
+    ESCNode &esc_node,
+    ESCNode::ESCStatusCache esc_status[],
+    const float *theta,
+    const float *theta_dot,
+    const int32_t *wheel_speed,
+    int32_t *esc_current_cmd,
+    uint32_t &calib_counter,
+    uint32_t &arm_counter,
+	uint32_t &adjust_counter,
+    bool &control_armed)
+{
+    const float max_balance_angle = 0.20f;
+	
+    // ========================= Calibration & Arm Logic =========================
+    // ESC not calibrated
+    if (!esc_status[ESC1_Index].calib_flag)
+	{
+        esc_current_cmd[0] = 0;
+        control_armed = false;
+        arm_counter = 0;
+
+        if ((calib_counter++ % 20U) == 0U)
+		{
+            esc_node.calib_esc_command((ESC1_Index + 1));
+        }
+    }
+	else 
+	{
+        calib_counter = 0;
+		
+        // Out of balance range -> disarm
+        if (fabsf(theta[0]) > max_balance_angle) {
+            esc_current_cmd[0] = 0;
+            control_armed = false;
+            arm_counter = 0;
+        }
+        else {
+            // Adaptive bias estimation (near equilibrium, low speed)
+
+            // Speed feedback: angle correction from wheel speed
+            float theta_corr = theta[0] - K_lqr[0][2] * wheel_speed[0];
+
+            float u = LQR_Compute(theta_corr,theta[0], theta_dot[0], wheel_speed[0], ESC1_Index);
+
+            esc_current_cmd[0] = (int32_t)(u * 1000.0f);
+        }
+        // Always send command
+        esc_node.send_esc_current_commands(esc_current_cmd, 3);
+    }
+}
+
 void StartControlTask(void *argument)
 {
     osDelay(100);
@@ -309,7 +370,7 @@ void StartControlTask(void *argument)
         printf("Failed to create sensor data queues!\r\n");
         Error_Handler();
     }
-
+	
     g_controlModeSem = osSemaphoreNew(1, 0, NULL);
     if (g_controlModeSem == NULL) {
         printf("Failed to create control mode semaphore!\r\n");
@@ -323,11 +384,13 @@ void StartControlTask(void *argument)
     }
 
     while (1) {
-
+		
+		//cpu_usage = GetCPUUsage();
+		
         // AHRS attitude update
         imu.getAccelDataCalibrated(ax, ay, az);
         imu.getGyroDataCalibrated(gx, gy, gz);
-
+		
         // Read magnetometer and transform to BMI088 coordinate frame
         // QMC5883P -> BMI088: 180 deg CW around Z-axis
         // X_acc = -X_mag, Y_acc = -Y_mag, Z_acc = Z_mag
@@ -385,7 +448,7 @@ void StartControlTask(void *argument)
             g_attitude.yaw = yaw;
             osMutexRelease(g_att_mutex);
 
-
+		
             // Send sensor data to MAVLink queue (50Hz = every 4th iteration)
             static uint8_t sensor_send_counter = 0;
             if ((++sensor_send_counter % 4U) == 0U) {
@@ -401,7 +464,8 @@ void StartControlTask(void *argument)
                 sensor_data.battery_remaining = 0;
                 osMessageQueuePut(g_mavSensorQueue, &sensor_data, 0, 0);
                 osMessageQueuePut(g_dispSensorQueue, &sensor_data, 0, 0);
-            }}
+            }
+		}
 
         // CAN send/receive
         esc_node.spin_once();
@@ -437,10 +501,10 @@ void StartControlTask(void *argument)
         if(g_controlModeSem != NULL)
             osSemaphoreAcquire(g_controlModeSem, 0);
 
-        // Execute selected control mode
+        
         if(g_selected_control_mode == 0)
         {
-            // Single side balance control
+            
             SingleSideBalanceControl(
                 esc_node,
                 esc_status,
@@ -455,8 +519,8 @@ void StartControlTask(void *argument)
         }
         else if(g_selected_control_mode == 1)
         {
-            // Three point balance control
-            SinglePointBalanceControl(
+					
+	    	SinglePointBalanceControl(
                 esc_node,
                 esc_status,
                 theta,
@@ -467,10 +531,66 @@ void StartControlTask(void *argument)
                 arm_counter,
 				adjust_counter,
                 control_armed);
+             
+					
+		}
+           
+        else if(g_selected_control_mode == 2)
+        {
+            static uint8_t  jump_state = 0;
+            static uint32_t jump_timer = 0;
+
+
+            esc_current_cmd[1] = 0;
+            esc_current_cmd[2] = 0;
+
+            if(jump_state == 0)
+            {
+                esc_current_cmd[0] = -25000;
+                if(++jump_timer >= 800)
+                {
+                    jump_timer = 0;
+                    jump_state = 1;
+                }
+            }
+			else if(jump_state == 1)
+			{
+				esc_current_cmd[0] += 2000;
+				if(esc_current_cmd[0] > 20000)esc_current_cmd[0] = 20000;
+				
+				if(fabsf(theta[0] < 0.2f))
+				{
+					jump_timer = 0;
+					jump_state = 2;
+				}
+			}				
+			
+            if(jump_state < 2)
+            {
+                esc_node.send_esc_current_commands(esc_current_cmd, 3);
+            }
+            else
+            {
+                SingleSideJumpBalanceControl(
+                    esc_node, esc_status, theta, theta_dot, wheel_speed,
+                    esc_current_cmd, calib_counter, arm_counter,
+                    adjust_counter, control_armed);
+            }
+        }
+        else if(g_selected_control_mode == 3)
+        {
+			
+            esc_current_cmd[0] = 0;
+            esc_current_cmd[1] = 0;
+            esc_current_cmd[2] = 0;
+            esc_node.send_esc_current_commands(esc_current_cmd, 3);
+            control_armed = false;
+            arm_counter = 0;
+            adjust_counter = 0;
         }
         else
         {
-            // No mode selected: idle, send zero current
+            
             esc_current_cmd[0] = 0;
             esc_current_cmd[1] = 0;
             esc_current_cmd[2] = 0;
@@ -480,22 +600,22 @@ void StartControlTask(void *argument)
 			adjust_counter=0;
         }
 
-        // ---------- Calibration command handling ----------
+        // У׼ģʽ
         if(g_calibSem != NULL)
         {
             if(osSemaphoreAcquire(g_calibSem, 0) == osOK)
             {
                 if(g_calib_command == 1)
                 {
-                    // Gyroscope calibration
+                    //������У׼
                     imu.calibrateAllStatic();
                     g_gyro_calibrated = true;
                 }
                 else if(g_calib_command == 2)
                 {
-                    // Magnetometer calibration: start 3-axis collection
+                    //������У׼
                     mag.startCalibration();
-                    g_mag_calibrated = false;  // will be set true when collection finishes
+                    g_mag_calibrated = false;  
                 }
                 g_calib_command = 0;
             }

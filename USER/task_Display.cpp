@@ -15,7 +15,7 @@ osThreadId_t DisplayTaskHandle = NULL;
 const osThreadAttr_t DisplayTask_attributes = {
     .name = "ControlTask",
     .stack_size = 8*1024,
-    .priority = (osPriority_t) osPriorityHigh,  // Same priority as control task
+    .priority = (osPriority_t) osPriorityNormal,  // 显示任务不需要高实时性，降低优先级避免阻塞控制任务
 };
 
 void StartDisplayTask(void *argument){
@@ -242,7 +242,7 @@ void StartDisplayTask(void *argument){
 
 		OLED_Update();
 
-		next_wake += 30U;  // ~33Hz
+		next_wake += 50U;  // 20Hz
 		osDelayUntil(next_wake);
 	}
 

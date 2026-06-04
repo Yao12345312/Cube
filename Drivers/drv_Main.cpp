@@ -2,6 +2,9 @@
 #include "task_Control.hpp"
 #include "task_Display.hpp"
 #include "task_Communication.hpp"
+#include "task_CPUMonitor.h"
+#include "LQR_Control.hpp"
+#include "param.hpp"
 #include "board.hpp"
 
 extern void MX_GPIO_Init(void);
@@ -54,6 +57,18 @@ void init_drv_Main(void)
   if (!Board::init()) {
         Error_Handler();
     }
+  
+  //注册参数
+  FlashParam_Register(0x0001, (void *)K_lqr, sizeof(K_lqr));
+  FlashParam_Register(0x0002, (void *)K_ff,  sizeof(K_ff));
+	
+  //参数初始化
+  if(!FlashParam_Load())
+  {
+	//若无有效数据，使用程序默认值
+	FlashParam_Save();  
+  }
+	
 }
 
 void create_application_tasks(void)
@@ -96,5 +111,18 @@ void create_application_tasks(void)
         Error_Handler();
     }
 	
-	    printf("All tasks created successfully!\r\n");
+	
+//	//创建CPU占用率获取任务（只在测试时开启）
+//	CPUUsageMonitorTaskHandle = osThreadNew(
+//        StartCPUUsageMonitorTask, 
+//        NULL, 
+//        &CPUUsageMonitorTask_attributes
+//    );
+//    
+//    if (CPUUsageMonitorTaskHandle == NULL) {
+//        printf("Failed to create CPUUsageMonitor Task!\r\n");
+//        Error_Handler();
+//    }
+//	
+	printf("All tasks created successfully!\r\n");
 }

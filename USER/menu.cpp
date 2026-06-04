@@ -43,34 +43,45 @@ MenuState menu_task_page(void)
 	auto& key1 = Board::getKey1();
 	auto& key2 = Board::getKey2();
 	auto& key3 = Board::getKey3();
+	
+	
+	const int8_t  MENU_COUNT = 4;
+	const int16_t VISIBLE_Y[3] = {18, 32, 46};
+	const char* menu_names[4] = {"单边控制", "单点控制", "单边起跳", "单点起跳"};
 
-	static int16_t draw_frame_y_pos = 18;
-	const int16_t pos_table[2] = {18, 32};
-	static int8_t index = 0;
+	static int8_t selected_idx = 0;
+	static int8_t scroll_top   = 0;
+
+	// Draw 3 visible items
+	for(int i = 0; i < 3; i++)
+	{
+		int8_t item_idx = scroll_top + i;
+		if(item_idx < MENU_COUNT)
+			OLED_ShowChinese(0, VISIBLE_Y[i], (char*)menu_names[item_idx]);
+	}
 
 	// key1: 上移
+	if(key1.getEvent() == Key::Event::ShortPress)
 	{
-		Key::Event evt = key1.getEvent();
-		if(evt == Key::Event::ShortPress)
-		{
-			index = (index - 1 + 2) % 2;
-			draw_frame_y_pos = pos_table[index];
-		}
+		selected_idx = (selected_idx - 1 + MENU_COUNT) % MENU_COUNT;
+		if(selected_idx < scroll_top)
+			scroll_top = selected_idx;
+		if(selected_idx >= scroll_top + 3)
+			scroll_top = selected_idx - 2;
 	}
 
 	// key2: 下移
+	if(key2.getEvent() == Key::Event::ShortPress)
 	{
-		Key::Event evt = key2.getEvent();
-		if(evt == Key::Event::ShortPress)
-		{
-			index = (index + 1) % 2;
-			draw_frame_y_pos = pos_table[index];
-		}
+		selected_idx = (selected_idx + 1) % MENU_COUNT;
+		if(selected_idx < scroll_top)
+			scroll_top = selected_idx;
+		if(selected_idx >= scroll_top + 3)
+			scroll_top = selected_idx - 2;
 	}
 
-	OLED_ShowChinese(0, 18, "单边控制");
-	OLED_ShowChinese(0, 32, "单点控制");
-
+	// Draw selection frame on current item
+	int16_t draw_frame_y_pos = VISIBLE_Y[selected_idx - scroll_top];
 	OLED_DrawRectangle(0, draw_frame_y_pos, 120, 15, 0);
 
 	// key3: 短按返回 / 长按确认选择
@@ -81,13 +92,10 @@ MenuState menu_task_page(void)
 
 		if(evt == Key::Event::LongPress)
 		{
-			//开启电调输�?
+			//开启电调输出
 			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
 
-			if(draw_frame_y_pos == 18)
-				g_selected_control_mode = 0;  // 单边控制
-			else
-				g_selected_control_mode = 1;  // 单点控制
+			g_selected_control_mode = (uint8_t)selected_idx;
 
 			if(g_controlModeSem != NULL)
 				osSemaphoreRelease(g_controlModeSem);
@@ -118,13 +126,32 @@ MenuState menu_control_running_page(void)
 	auto& key1 = Board::getKey1();
 	auto& key2 = Board::getKey2();
 	auto& key3 = Board::getKey3();
-
+	auto& buzzer = Board::getBuzzer();
+	
 	OLED_ShowChinese(0, 0, "当前模式:");
 
 	if(g_selected_control_mode == 0)
+	{
 		OLED_ShowChinese(0, 18, "单边控制");
+	}
+		
 	else if(g_selected_control_mode == 1)
+	{
 		OLED_ShowChinese(0, 18, "单点控制");
+	}
+		
+	else if(g_selected_control_mode == 2)
+	{	
+		//buzzer.beep(500,200);
+		OLED_ShowChinese(0, 18, "单边起跳");
+	}
+		
+	else if(g_selected_control_mode == 3)
+	{
+		//buzzer.beep(500,200);
+		OLED_ShowChinese(0, 18, "单点起跳");
+	}
+		
 	else
 		OLED_ShowChinese(0, 18, "未选择");
 
@@ -139,8 +166,8 @@ MenuState menu_control_running_page(void)
 		{
 			//关闭电调输出
 			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_RESET);
-			
-			g_selected_control_mode = 0xFF;  // 退出任务模�?
+
+			g_selected_control_mode = 0xFF;  // 退出任务模式
 
 			if(g_controlModeSem != NULL)
 				osSemaphoreRelease(g_controlModeSem);

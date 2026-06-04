@@ -6,7 +6,7 @@
 #include "queue.h"
 #include "semphr.h"
 
-/* ================= ÅäÖÃ ================= */
+/* ================= å®šä¹‰ ================= */
 
 #define UART1_DMA_RX_BUF_SIZE   512
 #define MAV_RX_BUF_LEN          256
@@ -23,11 +23,11 @@ public:
 
     bool init();
 
-    /* DMA½ÓÊÕÆô¶¯ */
+    /* DMAæ¥æ”¶å¼€å¯ */
     void startDMA();
-	/* DMA×´Ì¬Çå¿Õ */
+	/* DMAçŠ¶æ€å¤ä½ */
 	void resetRx();
-	
+
 	void enterAtMode();
 
 	void exitAtMode();
@@ -36,43 +36,48 @@ public:
 
 	int atRecv(uint8_t* buf, uint16_t len, uint32_t timeout);
 
-    /* IDLEÖĞ¶Ï´¦Àí */
+    /* IDLEä¸­æ–­å¤„ç† */
     void irqHandler();
 
-    /* ·¢ËÍ */
+    /* å‘é€ */
     void send(const uint8_t* data, uint16_t len);
 
-    /* ATÄ£Ê½¿ØÖÆ */
+    /* ATæ¨¡å¼æ§åˆ¶ */
     void setAtMode(bool enable);
 
-    /* »ñÈ¡¶ÓÁĞ */
+    /* è·å–é˜Ÿåˆ— */
     osMessageQueueId_t getMavQueue() { return m_mavQueue; }
-	
+
 	osMessageQueueId_t getAtQueue() { return m_atQueue; }
-	
+
 	UART_HandleTypeDef* getHandle() { return m_huart; }
-	
+
 	osMutexId_t getMutex() { return m_mutex; }
-	
+
+	osSemaphoreId_t getTxDoneSem() { return m_txDoneSem; }
+
 	bool isAtMode() const { return m_inAtMode; }
 
 private:
     UART_HandleTypeDef* m_huart;
 
-    /* DMA»·ĞÎ»º³åÇø */
+    /* DMAæ¥æ”¶ç¼“å†²åŒº */
     uint8_t m_dmaBuf[UART1_DMA_RX_BUF_SIZE];
     volatile uint16_t m_lastPos;
-	
+
 	volatile bool m_inAtMode;
 
-    /* ¶ÓÁĞ */
+    /* é˜Ÿåˆ— */
     osMessageQueueId_t m_atQueue;
     osMessageQueueId_t m_mavQueue;
 
-    /* »¥³â */
+    /* äº’æ–¥é” */
     osMutexId_t m_mutex;
+
+    /* DMAå‘é€å®Œæˆä¿¡å·é‡ */
+    osSemaphoreId_t m_txDoneSem;
 
 };
 
-/* È«¾ÖÖ¸Õë£¨ÓÃÓÚISR£© */
+/* å…¨å±€æŒ‡é’ˆï¼ˆç”¨äºISRï¼‰ */
 extern Uart1Driver* g_uart1;

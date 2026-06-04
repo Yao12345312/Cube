@@ -64,13 +64,13 @@
 #define configUSE_PREEMPTION                     1
 #define configSUPPORT_STATIC_ALLOCATION          1
 #define configSUPPORT_DYNAMIC_ALLOCATION         1
-#define configUSE_IDLE_HOOK                      0
-#define configUSE_TICK_HOOK                      0
+#define configUSE_IDLE_HOOK                      1
+#define configUSE_TICK_HOOK                      1
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )
 #define configMINIMAL_STACK_SIZE                 ((uint16_t)512)
-#define configTOTAL_HEAP_SIZE                    ((size_t)30*1024)
+#define configTOTAL_HEAP_SIZE                    ((size_t)50*1024)
 #define configMAX_TASK_NAME_LEN                  ( 16 )
 #define configUSE_TRACE_FACILITY         		 1
 #define configUSE_16_BIT_TICKS                   0
@@ -181,5 +181,16 @@ standard names. */
 #ifndef traceISR_EXIT_TO_SCHEDULER
 #define traceISR_EXIT_TO_SCHEDULER()
 #endif
+
+/* ========== Run-Time Stats (CPU Usage) ========== */
+#define configGENERATE_RUN_TIME_STATS                1
+#define configUSE_STATS_FORMATTING_FUNCTIONS         1
+
+/* Use DWT CYCCNT (Cortex-M7 cycle counter) as time base */
+extern void RunTimeStats_Init(void);
+extern uint32_t RunTimeStats_GetCounter(void);
+
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()     RunTimeStats_Init()
+#define portGET_RUN_TIME_COUNTER_VALUE()             RunTimeStats_GetCounter()
 
 #endif /* FREERTOS_CONFIG_H */

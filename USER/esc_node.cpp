@@ -333,8 +333,8 @@ void ESCNode::send_esc_rpm_commands(const int32_t *cmd_array, uint8_t len)
         int32_t rpm = cmd_array[i];
 
         // оч╥Ы
-        if (rpm >  5000) rpm = 5000;
-        if (rpm < -5000) rpm = -5000;
+        if (rpm >  8000) rpm = 8000;
+        if (rpm < -8000) rpm = -8000;
 
         msg.rpm.data[i] = rpm;
     }

@@ -406,9 +406,19 @@
               <FilePath>.\USER\task_Display.cpp</FilePath>
             </File>
             <File>
+              <FileName>task_CPUMonitor.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\USER\task_CPUMonitor.cpp</FilePath>
+            </File>
+            <File>
               <FileName>esc_node.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\USER\esc_node.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>param.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\USER\param.cpp</FilePath>
             </File>
             <File>
               <FileName>menu.cpp</FileName>

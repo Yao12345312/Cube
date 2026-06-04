@@ -6,7 +6,7 @@
 #define LFS_BLOCK_SIZE    512
 #define LFS_BLOCK_COUNT   (32 * 1024)
 
-/* ================= Cache ²Ù×÷£¨STM32H7 ±ØÐë£© ================= */
+/* ================= Cache ²Ù×÷ ================= */
 
 static inline void cache_clean(const void* addr, size_t size)
 {

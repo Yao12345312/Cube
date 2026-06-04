@@ -67,6 +67,8 @@ namespace MAVLink {
             if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &mav_msg, &mav_status) == MAVLINK_FRAMING_OK) {
                 // 解析成功，根据消息ID处理
                 switch (mav_msg.msgid) {
+					
+					
 					//解析地面站心跳包
                     case MAVLINK_MSG_ID_HEARTBEAT: {
                         // 解码心跳消息
@@ -92,7 +94,18 @@ namespace MAVLink {
                         }
                         break;
                     }
-
+					
+				   //解析地面站控制指令
+				   case MAVLINK_MSG_ID_COMMAND_LONG:{
+					//解码控制命令信息
+					mavlink_command_long_t command;
+					mavlink_msg_command_long_decode(&mav_msg, &command);
+					
+					   
+					break;
+					}
+					
+					//没有对应处理ID，退出
                     default:
                         // 其他消息可以忽略或根据需要添加处理
                         break;
@@ -104,6 +117,14 @@ namespace MAVLink {
 
 void SendHeartbeat(void)
 {	
+	// Rate limit heartbeat to 1Hz
+	static uint32_t last_send_tick = 0;
+	uint32_t now = osKernelGetTickCount();
+	if ((now - last_send_tick) < 1000U) {
+		return;
+	}
+	
+	last_send_tick = now;
 	//获取串口实例
 	auto& uart = Board::getUart1();
 	

@@ -2,33 +2,35 @@
 #include <string.h>
 
 extern "C" void Error_Handler(void);
-	
+
 Uart1Driver* g_uart1Driver = nullptr;
 
-/* ================= ¹¹Ôì ================= */
+/* ================= æ„é€  ================= */
 
 Uart1Driver::Uart1Driver(UART_HandleTypeDef* huart)
     : m_huart(huart)
     , m_lastPos(0)
     , m_atQueue(nullptr)
     , m_mavQueue(nullptr)
+    , m_mutex(nullptr)
+    , m_txDoneSem(nullptr)
     , m_inAtMode(false)
 {
     g_uart1Driver = this;
 }
 
-/* ================= ³õÊ¼»¯ ================= */
+/* ================= åˆå§‹åŒ– ================= */
 
 bool Uart1Driver::init()
 {
-    /* ´´½¨¶ÓÁĞ */
+    /* åˆ›å»ºé˜Ÿåˆ— */
 	m_mavQueue = osMessageQueueNew(16, sizeof(MavRxFrame_t), NULL);
     m_atQueue = osMessageQueueNew(16, sizeof(uint8_t), NULL);
     m_mutex = osMutexNew(NULL);
 
     if (!m_atQueue || !m_mavQueue) return false;
 
-    /* ´´½¨»¥³âËø */
+    /* åˆ›å»ºäº’æ–¥é” */
     osMutexAttr_t attr = {
         "uart1_mutex",
         osMutexRecursive | osMutexPrioInherit,
@@ -37,9 +39,12 @@ bool Uart1Driver::init()
     };
     m_mutex = osMutexNew(&attr);
 
+    // DMAå‘é€å®Œæˆä¿¡å·é‡ï¼šæœ€å¤§è®¡æ•°1ï¼Œåˆå§‹è®¡æ•°0ï¼Œç”±HAL_UART_TxCpltCallbacké‡Šæ”¾
+    m_txDoneSem = osSemaphoreNew(1, 0, NULL);
+
     startDMA();
 
-    /* ¿ªÆôIDLEÖĞ¶Ï */
+    /* ä½¿èƒ½IDLEä¸­æ–­ */
     __HAL_UART_ENABLE_IT(m_huart, UART_IT_IDLE);
 
     return true;
@@ -49,16 +54,16 @@ void Uart1Driver::enterAtMode()
 {
     m_inAtMode = true;
 
-    /* Í£DMA */
+    /* åœDMA */
     HAL_UART_DMAStop(m_huart);
 
-    /* µÈ´ı·¢ËÍÍê³É */
+    /* ç­‰å¾…å‘é€å®Œæˆ */
     while (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_TC) == RESET);
 
-    /* ¹Ø±ÕUART */
+    /* å…³é—­UART */
     HAL_UART_DeInit(m_huart);
 
-    /* ÖØĞÂ³õÊ¼»¯£¨ÆÕÍ¨Ä£Ê½£© */
+    /* é‡æ–°åˆå§‹åŒ–ï¼ˆæ™®é€šæ¨¡å¼ï¼‰ */
     HAL_UART_Init(m_huart);
 }
 
@@ -93,7 +98,7 @@ int Uart1Driver::atRecv(uint8_t* buf, uint16_t len, uint32_t timeout)
 
     while ((HAL_GetTick() - start) < timeout)
     {
-        if (HAL_UART_Receive(m_huart, &ch, 1, 50) == HAL_OK) // 50msµÈ´ı
+        if (HAL_UART_Receive(m_huart, &ch, 1, 50) == HAL_OK) // 50msç­‰å¾…
         {
             buf[idx++] = ch;
             if (ch == '\n' || idx >= len)
@@ -104,81 +109,87 @@ int Uart1Driver::atRecv(uint8_t* buf, uint16_t len, uint32_t timeout)
     return idx;
 }
 
-/* ================= Æô¶¯DMA ================= */
+/* ================= å¯åŠ¨DMA ================= */
 
 void Uart1Driver::startDMA()
-{	
+{
 	memset(m_dmaBuf, 0, UART1_DMA_RX_BUF_SIZE);
 	m_lastPos = 0;
-	
+
 	if(HAL_UART_Receive_DMA(m_huart, m_dmaBuf, UART1_DMA_RX_BUF_SIZE) != HAL_OK)
     {
 	Error_Handler();
 	}
 
-    /* ×¢Òâ²»ÄÜ½ûÓÃDMA´«ÊäÖĞ¶Ï£¬·ñÔòDMAÊÕ²»µ½Êı¾İ */
+    /* æ³¨æ„ä¸èƒ½æ‰“å¼€DMAåŠä¼ è¾“ä¸­æ–­ï¼Œå¦åˆ™DMAæ”¶ä¸æ»¡ */
     //__HAL_DMA_DISABLE_IT(m_huart->hdmarx, DMA_IT_HT);
 }
-/* ================= Çå¿ÕDMA×´Ì¬ ================= */
+/* ================= å¤ä½DMAçŠ¶æ€ ================= */
 void Uart1Driver::resetRx()
 {
     m_lastPos = 0;
     memset(m_dmaBuf, 0, UART1_DMA_RX_BUF_SIZE);
 }
 
-/* ================= ·¢ËÍ ================= */
+/* ================= å‘é€ ================= */
 
 void Uart1Driver::send(const uint8_t* data, uint16_t len)
 {
     if (!data || len == 0) return;
 
     osMutexAcquire(m_mutex, osWaitForever);
-	
+
     if(HAL_UART_Transmit_DMA(m_huart, (uint8_t*)data, len )!=HAL_OK)
 	{
-	Error_Handler();
+        osMutexRelease(m_mutex);
+		Error_Handler();
 	}
-	
-	while (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_TC) == RESET);
-	
+
+	// ç­‰å¾…DMAå‘é€å®Œæˆï¼ˆç”±HAL_UART_TxCpltCallbacké‡Šæ”¾ä¿¡å·é‡ï¼Œè¶…æ—¶200msé˜²æ­»ç­‰ï¼‰
+	if(osSemaphoreAcquire(m_txDoneSem, 200) != osOK)
+	{
+		// è¶…æ—¶ï¼šDMAå¼‚å¸¸ï¼Œç»ˆæ­¢å‘é€å¹¶å¤ä½UART
+		HAL_UART_AbortTransmit(m_huart);
+	}
+
     osMutexRelease(m_mutex);
 }
 
-/* ================= ATÄ£Ê½ ================= */
+/* ================= ATæ¨¡å¼ ================= */
 
 void Uart1Driver::setAtMode(bool enable)
 {
     m_inAtMode = enable;
 }
 
-/* ================= IDLEÖĞ¶ÏºËĞÄ ================= */
+/* ================= IDLEä¸­æ–­å‡½æ•° ================= */
 
 void Uart1Driver::irqHandler()
-{	//ÅĞ¶Ï´®¿ÚÊÇ·ñ½øÈë¿ÕÏĞÖĞ¶Ï
+{	//ä¸­æ–­å¤„ç†ï¼šæ˜¯å¦ä¸²å£ç©ºé—²ä¸­æ–­
     if (__HAL_UART_GET_FLAG(m_huart, UART_FLAG_IDLE))
-    {	//Çå¿ÕÖĞ¶Ï±êÖ¾Î»
+    {	//æ¸…é™¤ä¸­æ–­æ ‡å¿—ä½
         __HAL_UART_CLEAR_IDLEFLAG(m_huart);
-		//¼ÆËãÒÑ½ÓÊÕ×Ö½ÚÊı=BUF_SIZE - µ±Ç°DMAÊ£Óà¼ÆÊı£¬»ñµÃĞÂÊı¾İÎ»ÖÃ
+		//è®¡ç®—å·²æ¥æ”¶å­—èŠ‚æ•°=BUF_SIZE - å½“å‰DMAå‰©ä½™è®¡æ•°ï¼ˆç¯å½¢ç¼“å†²åŒºä½ç½®ï¼‰
         uint16_t dmaRemain = __HAL_DMA_GET_COUNTER(m_huart->hdmarx);
         uint16_t newPos = UART1_DMA_RX_BUF_SIZE - dmaRemain;
         uint16_t start = m_lastPos;
-		//Èç¹ûÃ»ÓĞÊı¾İÔò·µ»Ø
+		//æ²¡æœ‰æ–°æ•°æ®åˆ™è¿”å›
         if (newPos == start) return;
 
-        /* ================= ATÄ£Ê½ ================= */
+        /* ================= ATæ¨¡å¼ ================= */
         if (isAtMode())
-        {	
-			//Î´·¢Éú»·ĞÎ»·ÈÆ£¬Êı¾İÁ¬Ğø
+        {
+			//æœªå‘ç”Ÿç¼“å†²åŒºå›ç»•ï¼Œé¡ºåºè¯»å–
             if (newPos > start)
-            {	
-				//°´Ë³ĞòÖğ¸ö×Ö·û·ÅÈëÏûÏ¢¶ÓÁĞ
+            {
+				//æŒ‰é¡ºåºé€å­—ç¬¦é€å…¥æ¶ˆæ¯é˜Ÿåˆ—
                 for (uint16_t i = start; i < newPos; i++)
                 {
                     uint8_t ch = m_dmaBuf[i];
-                    osMessageQueuePut(m_atQueue, &ch, 0, 0); // ISR±ØĞëtimeout=0£¬È·±£ÔÚÖĞ¶ÏÖĞ²»»á×èÈû
+                    osMessageQueuePut(m_atQueue, &ch, 0, 0); // ISRä¸­timeout=0ï¼Œç¡®ä¿åœ¨ä¸­æ–­ä¸­ä¸é˜»å¡
                 }
             }
-			//·¢Éú»·ĞÎ»·ÈÆ£¬ÏÈ´¦Àí»º³åÇøÄ©Î²[start,UART1_DMA_RX_BUF_SIZE],ÔÙ´¦Àí[0,newPos]
+			//å‘ç”Ÿç¼“å†²åŒºå›ç»•ï¼Œå…ˆå¤„ç†ç¼“å†²åŒºæœ«å°¾[start,UART1_DMA_RX_BUF_SIZE],å†å¤„ç†[0,newPos]
             else
             {
                 for (uint16_t i = start; i < UART1_DMA_RX_BUF_SIZE; i++)
@@ -192,26 +203,26 @@ void Uart1Driver::irqHandler()
                     osMessageQueuePut(m_atQueue, &ch, 0, 0);
                 }
             }
-			//¸üĞÂlastpose
+			//æ›´æ–°lastpose
             m_lastPos = newPos;
             return;
         }
 
-        /* ================= MAVLinkÄ£Ê½ ================= */
-		//MAVLinkÊôÓÚ¶ş½øÖÆĞ­ÒéĞèÒªÒÔÖ¡Îªµ¥Î»´¦Àí
+        /* ================= MAVLinkæ¨¡å¼ ================= */
+		//MAVLinkä¸²å£äºŒè¿›åˆ¶åè®®éœ€ä»¥å¸§ä¸ºå•ä½å¤„ç†
         MavRxFrame_t frame;
         frame.len = 0;
-		//Î´·¢Éú»·ÈÆ
+		//æœªå‘ç”Ÿå›ç»•
         if (newPos > start)
-        {	
-			//»º³åÇø±£»¤£ºÈç¹û×ÜÊı¾Ó³¬¹ıMAV_RX_BUF_LEN£¬Ö»È¡Ç°MAV_RX_BUF_LEN¸ö×Ö½Ú
+        {
+			//é™åˆ¶å•å¸§é•¿åº¦ä¸è¶…è¿‡ç¼“å†²åŒºå¤§å°ï¼Œè¶…è¿‡MAV_RX_BUF_LENåˆ™åªå–å‰MAV_RX_BUF_LENå­—èŠ‚
             uint16_t len = newPos - start;
             if (len > MAV_RX_BUF_LEN) len = MAV_RX_BUF_LEN;
-			//Êı¾İ´ÓDMA»º³åÇø´æÈëframe
+			//æ•°æ®ä»DMAç¼“å†²åŒºå¤åˆ¶åˆ°å¸§
             memcpy(frame.data, &m_dmaBuf[start], len);
             frame.len = len;
         }
-		//·¢Éú»·ÈÆ£¬Í¬ÑùÏÈ´¦ÀíÎ²²¿ÔÙ´¦ÀíÍ·²¿
+		//å‘ç”Ÿå›ç»•ï¼ŒåŒç†å…ˆæ‹·è´å°¾éƒ¨å†æ‹·è´å¤´éƒ¨
         else
         {
             uint16_t part1 = UART1_DMA_RX_BUF_SIZE - start;
@@ -231,10 +242,10 @@ void Uart1Driver::irqHandler()
         }
 
         m_lastPos = newPos;
-		//Êı¾İÖ¡ÍêÕûËÍÈë¶ÓÁĞ
+		//å¸§æ•°æ®é€å…¥é˜Ÿåˆ—
         if (frame.len > 0)
         {
-            osMessageQueuePut(m_mavQueue, &frame, 0, 0); // ISR±ØĞëtimeout=0
+            osMessageQueuePut(m_mavQueue, &frame, 0, 0); // ISRä¸­timeout=0
         }
     }
 }
@@ -244,5 +255,14 @@ extern "C" void UART1_IdleCallback(void)
     if (g_uart1Driver)
     {
         g_uart1Driver->irqHandler();
+    }
+}
+
+// DMAå‘é€å®Œæˆå›è°ƒï¼Œé‡Šæ”¾ä¿¡å·é‡å”¤é†’send()ä¸­çš„ç­‰å¾…
+extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (g_uart1Driver && huart->Instance == USART1)
+    {
+        osSemaphoreRelease(g_uart1Driver->getTxDoneSem());
     }
 }
