@@ -4,6 +4,7 @@
 #include "board.hpp"
 #include "MahonyAHRS.hpp"
 #include "LQR_control.hpp"
+#include "LESO.hpp"
 #include "attitute.hpp"
 
 
@@ -35,7 +36,7 @@ uint8_t g_calib_command = 0;              // 0=idle, 1=gyro, 2=mag
 bool g_gyro_calibrated = false;
 bool g_mag_calibrated = false;
 
-static float z_axis_Compensation =0.35f;
+static float z_axis_Compensation =0.25f;
 	
 static uint32_t cpu_usage = 0;
 
@@ -49,6 +50,8 @@ namespace {
 
 
 //单边控制（ESC1）
+// theta[0]: X轴角度
+// theta_dot[0]: X轴角速度
 static void SingleSideBalanceControl(
     ESCNode &esc_node,
     ESCNode::ESCStatusCache esc_status[],
@@ -125,14 +128,24 @@ static void SingleSideBalanceControl(
 
             float u = LQR_Compute(theta_corr,theta[0], theta_dot[0], wheel_speed[0], ESC1_Index);
 
-            esc_current_cmd[0] = (int32_t)(u * 1000.0f);
+            // ESO状态更新与扰动补偿
+            static ESO_t eso_x;
+            static bool eso_x_init = false;
+            if (!eso_x_init) {
+                ESO_Init(&eso_x);
+                eso_x_init = true;
+            }
+            ESO_Update(&eso_x, theta[0], u, 0.002f);
+            float u_comp = u - eso_x.z3 / eso_x.b0;
+
+            esc_current_cmd[0] = (int32_t)(u_comp * 1000.0f);
         }
         //发送电调油门指令
         esc_node.send_esc_current_commands(esc_current_cmd, 3);
     }
 }
 
-//三轴单点平衡
+//单点控制
 // theta[1]: X轴角度
 // theta[2]: Y轴角度
 // theta_dot[0]: X轴角速度
@@ -144,6 +157,7 @@ static void SinglePointBalanceControl(
     const float *theta_dot,
     const int32_t *wheel_speed,
     int32_t *esc_current_cmd,
+    float yaw,
     uint32_t &calib_counter,
     uint32_t &arm_counter,
 	uint32_t &adjust_counter,
@@ -257,20 +271,32 @@ static void SinglePointBalanceControl(
     float out_x = LQR_Compute(theta_corr_x, (theta[1]-2.35f),theta_dot[0], wheel_speed[0], ESC1_Index);
     float out_z = LQR_Compute(theta_corr_z, 0.0f, theta_dot[2], wheel_speed[1], ESC2_Index);
     float out_y = LQR_Compute(theta_corr_y, -(theta[2]-0.64f), theta_dot[1], wheel_speed[2], ESC3_Index);
+    //线性ESO初始化
+    static ESO_t eso_x, eso_y, eso_z;
+    static bool eso_init = false;
+    if (!eso_init) {
+        ESO_Init(&eso_x);
+        ESO_Init(&eso_y);
+        ESO_Init(&eso_z);
+        eso_init = true;
+    }
+	//线性ESO状态更新
+    ESO_Update(&eso_x, theta[1], out_x, 0.002f);
+    ESO_Update(&eso_y, theta[2], out_y, 0.002f);
+    ESO_Update(&eso_z, yaw, out_z, 0.002f);
+
+    // 扰动补偿项计算，补偿总扰动z3估计值
+    const float comp_x = eso_x.z3 / eso_x.b0;
+    const float comp_y = eso_y.z3 / eso_y.b0;
+    const float comp_z = eso_z.z3 / eso_z.b0;
 	
-	adjust_counter++;
+	//解锁后接入控制
+	if(control_armed)
+	{
+	esc_current_cmd[0] = (int32_t)((out_x + z_axis_Compensation - comp_x) * 1000.0f);
+	esc_current_cmd[1] = (int32_t)((out_z + z_axis_Compensation - comp_z) * 1000.0f);
+    esc_current_cmd[2] = (int32_t)((out_y + z_axis_Compensation - comp_y) * 1000.0f);
 	
-	if(adjust_counter < 1000)
-	{
-	    esc_current_cmd[0] = (int32_t)(out_x * 1000.0f);
-		esc_current_cmd[1] = (int32_t)(out_z * 1000.0f);
-		esc_current_cmd[2] = (int32_t)(out_y * 1000.0f);
-	}
-	else
-	{
-		esc_current_cmd[0] = (int32_t)((out_x+z_axis_Compensation) * 1000.0f);
-		esc_current_cmd[1] = (int32_t)((out_z+z_axis_Compensation) * 1000.0f);
-		esc_current_cmd[2] = (int32_t)((out_y+z_axis_Compensation) * 1000.0f);
 	}
 	
     esc_node.send_esc_current_commands(esc_current_cmd, 3);
@@ -404,7 +430,7 @@ void StartControlTask(void *argument)
             mag.updateCalibration(magData);
             if (calib_was_collecting && !mag.isCollecting())
             {
-                // Collection just finished (reached target sample count)
+                //磁力计校准完成标志位
                 g_mag_calibrated = true;
             }
             calib_was_collecting = mag.isCollecting();
@@ -519,62 +545,72 @@ void StartControlTask(void *argument)
         else if(g_selected_control_mode == 1)
         {
 			
-	    	SinglePointBalanceControl(
-                esc_node,
-                esc_status,
-                theta,
-                theta_dot,
-                wheel_speed,
-                esc_current_cmd,
-                calib_counter,
-                arm_counter,
-				adjust_counter,
-                control_armed);
+			
+		    	SinglePointBalanceControl(
+	                esc_node,
+	                esc_status,
+	                theta,
+	                theta_dot,
+	                wheel_speed,
+	                esc_current_cmd,
+	                yaw,
+	                calib_counter,
+	                arm_counter,
+					adjust_counter,
+	                control_armed);
              
 					
 		}
         //模式3：单边起跳
         else if(g_selected_control_mode == 2)
         {
-            static uint8_t  jump_state = 0;
-            static uint32_t jump_timer = 0;
+//            static uint8_t  jump_state = 0;
+//            static uint32_t jump_timer = 0;
 
 
+//            esc_current_cmd[1] = 0;
+//            esc_current_cmd[2] = 0;
+
+//            if(jump_state == 0)
+//            {
+//                esc_current_cmd[0] = -25000;
+//                if(++jump_timer >= 800)
+//                {
+//                    jump_timer = 0;
+//                    jump_state = 1;
+//                }
+//            }
+//			else if(jump_state == 1)
+//			{
+//				esc_current_cmd[0] += 2000;
+//				if(esc_current_cmd[0] > 20000)esc_current_cmd[0] = 20000;
+//				
+//				if(fabsf(theta[0] < 0.2f))
+//				{
+//					jump_timer = 0;
+//					jump_state = 2;
+//				}
+//			}				
+//			
+//            if(jump_state < 2)
+//            {
+//                esc_node.send_esc_current_commands(esc_current_cmd, 3);
+//            }
+//            else
+//            {
+//                SingleSideJumpBalanceControl(
+//                    esc_node, esc_status, theta, theta_dot, wheel_speed,
+//                    esc_current_cmd, calib_counter, arm_counter,
+//                    adjust_counter, control_armed);
+//            }
+
+		    esc_current_cmd[0] = 0;
             esc_current_cmd[1] = 0;
             esc_current_cmd[2] = 0;
-
-            if(jump_state == 0)
-            {
-                esc_current_cmd[0] = -25000;
-                if(++jump_timer >= 800)
-                {
-                    jump_timer = 0;
-                    jump_state = 1;
-                }
-            }
-			else if(jump_state == 1)
-			{
-				esc_current_cmd[0] += 2000;
-				if(esc_current_cmd[0] > 20000)esc_current_cmd[0] = 20000;
-				
-				if(fabsf(theta[0] < 0.2f))
-				{
-					jump_timer = 0;
-					jump_state = 2;
-				}
-			}				
-			
-            if(jump_state < 2)
-            {
-                esc_node.send_esc_current_commands(esc_current_cmd, 3);
-            }
-            else
-            {
-                SingleSideJumpBalanceControl(
-                    esc_node, esc_status, theta, theta_dot, wheel_speed,
-                    esc_current_cmd, calib_counter, arm_counter,
-                    adjust_counter, control_armed);
-            }
+            esc_node.send_esc_current_commands(esc_current_cmd, 3);
+            control_armed = false;
+            arm_counter = 0;
+            adjust_counter = 0;
         }
 		//模式4：单点起跳
         else if(g_selected_control_mode == 3)

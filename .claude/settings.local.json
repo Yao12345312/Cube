@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -n '263,273p' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")",
+      "Read(//tmp/**)",
+      "Bash(python -c ' *)",
+      "Bash(iconv -f UTF-8 -t GB2312 /tmp/eso_block.txt)",
+      "Bash(sed -i 's/esc_current_cmd\\\\[0\\\\] = \\(int32_t\\)\\(out_x \\\\* 1000.0f\\);/esc_current_cmd[0] = \\(int32_t\\)\\(\\(out_x - comp_x\\) * 1000.0f\\);/' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")",
+      "Bash(sed -i 's/esc_current_cmd\\\\[1\\\\] = \\(int32_t\\)\\(out_z \\\\* 1000.0f\\);/esc_current_cmd[1] = \\(int32_t\\)\\(\\(out_z - comp_z\\) * 1000.0f\\);/' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")",
+      "Bash(sed -i 's/esc_current_cmd\\\\[2\\\\] = \\(int32_t\\)\\(out_y \\\\* 1000.0f\\);/esc_current_cmd[2] = \\(int32_t\\)\\(\\(out_y - comp_y\\) * 1000.0f\\);/' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")",
+      "Bash(sed -i 's/esc_current_cmd\\\\[0\\\\] = \\(int32_t\\)\\(\\(out_x + z_axis_Compensation\\) \\\\* 1000.0f\\);/esc_current_cmd[0] = \\(int32_t\\)\\(\\(out_x + z_axis_Compensation - comp_x\\) * 1000.0f\\);/' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")",
+      "Bash(sed -i 's/esc_current_cmd\\\\[1\\\\] = \\(int32_t\\)\\(\\(out_z + z_axis_Compensation\\) \\\\* 1000.0f\\);/esc_current_cmd[1] = \\(int32_t\\)\\(\\(out_z + z_axis_Compensation - comp_z\\) * 1000.0f\\);/' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")",
+      "Bash(printf '\\\\t\\\\t\\\\t\\\\r\\\\n\\\\t\\\\t    \\\\tSinglePointBalanceControl\\(\\\\r\\\\n\\\\t                esc_node,\\\\r\\\\n\\\\t                esc_status,\\\\r\\\\n\\\\t                theta,\\\\r\\\\n\\\\t                theta_dot,\\\\r\\\\n\\\\t                wheel_speed,\\\\r\\\\n\\\\t                esc_current_cmd,\\\\r\\\\n\\\\t                yaw,\\\\r\\\\n\\\\t                calib_counter,\\\\r\\\\n\\\\t                arm_counter,\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\tadjust_counter,\\\\r\\\\n\\\\t                control_armed\\);\\\\r\\\\n')",
+      "Bash(sed -i '556r /tmp/spb_call.txt' \"c:/Users/ASUS/Desktop/STM32/H743/Cube-ADRC/USER/task_Control.cpp\")"
+    ]
+  }
+}

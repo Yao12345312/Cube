@@ -198,7 +198,7 @@ MenuState menu_gyro_calib_page(void)
 
 	OLED_ShowChinese(0, 36, "长按key3开始校准");
 
-	// key3: short press back / long press calibrate
+	// 按键3短按返回，长按确认
 	{
 		Key::Event evt = key3.getEvent();
 		if(evt == Key::Event::ShortPress)

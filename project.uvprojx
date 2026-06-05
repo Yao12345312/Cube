@@ -667,6 +667,11 @@
               <FileType>8</FileType>
               <FilePath>.\ControlSystem\LQR_Control.cpp</FilePath>
             </File>
+            <File>
+              <FileName>LESO.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\ControlSystem\LESO.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

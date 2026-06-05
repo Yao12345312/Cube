@@ -8,10 +8,10 @@ extern u8g2_t u8g2;
 
 extern osMessageQueueId_t g_dispSensorQueue;
 
-// Task handle
+//定义任务句柄
 osThreadId_t DisplayTaskHandle = NULL;
 
-// Task attributes
+//定义任务属性
 const osThreadAttr_t DisplayTask_attributes = {
     .name = "ControlTask",
     .stack_size = 8*1024,
@@ -51,19 +51,18 @@ void StartDisplayTask(void *argument){
 
 	MenuState main_menu_flag = MenuState::MAIN_PAGE_STATE;
 
-	// Clear buffer
+	//清除OLED缓存
 	OLED_Clear();
 
 	osDelay(100);
-	// Show LOGO
+	//显示LOGO
 	OLED_DisplayLogo();
-	// Refresh display
+	//更新缓存
 	OLED_Update();
 
 	osDelay(1500);
 
-	// Discard any spurious key events accumulated during boot (~1600ms)
-	// Prevents false LongPress from floating GPIO before pull-ups stabilize
+	//获取按键事件
 	key1.update(); key1.getEvent();
 	key2.update(); key2.getEvent();
 	key3.update(); key3.getEvent();
@@ -72,16 +71,16 @@ void StartDisplayTask(void *argument){
 
 	while(1)
 	{
-		// Clear buffer
+		//清除缓存
 		OLED_Clear();
 
-		// Read key states
+		//更新按键状态
 		key1.update();
 		key2.update();
 		key3.update();
 
 
-		// Receive sensor data (non-blocking)
+		//队列获取传感器数据
 		if (g_dispSensorQueue != NULL) {
 		    MavSensorData_t sensor_data;
 		    if (osMessageQueueGet(g_dispSensorQueue, &sensor_data, NULL, 0) == osOK) {
@@ -90,26 +89,26 @@ void StartDisplayTask(void *argument){
 		}
 		esc_node.get_esc_status(ESC1_Index,esc_status[ESC1_Index]);
 
-		// Get battery status (filter I2C failures that return -1.0V)
+		//获取电池状态
 		{
 			float bus_v = ina226.INA226_ReadBusVoltage();
 			if (bus_v > 0.0f)
 				bat_status = ina226.INA226_get_bat_status(bus_v);
 		}
 
-		// Main page: scrollable menu
+		//主界面滚动菜单
 		if(main_menu_flag == MenuState::MAIN_PAGE_STATE)
 		{
-			// Draw 3 visible items
+			//显示三个图标（选择框，蓝牙连接状态，电池电量）
 			for(int i = 0; i < 3; i++)
 			{
 				int8_t item_idx = scroll_top + i;
 				if(item_idx < MENU_COUNT)
 				{
-					// Show item name with calibration status for items 3 and 4
+					//菜单名称写入缓存
 					OLED_ShowChinese(0, VISIBLE_Y[i], (char*)menu_names[item_idx]);
 
-					// Status indicator for calib items
+					//指示校准状态
 					if(item_idx == 3 && g_gyro_calibrated)
 						OLED_ShowChinese(90, VISIBLE_Y[i], "OK");
 					if(item_idx == 4 && g_mag_calibrated)
@@ -117,34 +116,34 @@ void StartDisplayTask(void *argument){
 				}
 			}
 
-			// Key1: move up (wrap around)
+			//按键1短按：选择框上移
 			if(key1.getEvent() == Key::Event::ShortPress)
 			{
 				selected_idx = (selected_idx - 1 + MENU_COUNT) % MENU_COUNT;
-				// Adjust scroll window
+				//移动选择框
 				if(selected_idx < scroll_top)
 					scroll_top = selected_idx;
 				if(selected_idx >= scroll_top + 3)
 					scroll_top = selected_idx - 2;
 			}
 
-			// Key2: move down (wrap around)
+			//按键2短按：选择框下移
 			if(key2.getEvent() == Key::Event::ShortPress)
 			{
 				selected_idx = (selected_idx + 1) % MENU_COUNT;
-				// Adjust scroll window
+				//移动选择框
 				if(selected_idx < scroll_top)
 					scroll_top = selected_idx;
 				if(selected_idx >= scroll_top + 3)
 					scroll_top = selected_idx - 2;
 			}
 
-			// Draw selection frame on current item
+			//选择框写入缓存
 			draw_frame_y_pos = VISIBLE_Y[selected_idx - scroll_top];
 			if(draw_frame_y_pos != 0)
 				OLED_DrawRectangle(0, draw_frame_y_pos, 120, 15, 0);
 
-			// Key3 long press: enter sub-menu based on selected index
+			//按键3长按：确定
 			if(key3.getEvent() == Key::Event::LongPress)
 			{
 				switch(selected_idx)
@@ -166,7 +165,7 @@ void StartDisplayTask(void *argument){
 					break;
 				}
 
-				// Wait for key3 release after long press transition
+				//长按后松手检测
 				while(key3.isPressed())
 				{
 					key3.update();
@@ -176,7 +175,7 @@ void StartDisplayTask(void *argument){
 		}
 
 
-		// Sub-page mode switch
+		//子界面切换
 		switch (main_menu_flag)
 		{
 		case MenuState::ATT_PAGE_STATE:
@@ -212,7 +211,7 @@ void StartDisplayTask(void *argument){
 			}
 		}
 
-		// BLE and battery icons (drawn after page content, shows on all pages)
+		//蓝牙连接状态标志以及电量图标写入缓存
 		if(MAVLink::get_mavlink_connect_status())
 		{
 			led.setRGBBlink(0,100,0,1);

@@ -9,7 +9,7 @@
 //定义任务句柄
 osThreadId_t communicationTaskHandle = NULL;
 
-// 定义任务属性
+//定义任务属性
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
     .stack_size = 4 * 1024,      // 4K
