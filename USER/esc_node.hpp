@@ -6,12 +6,13 @@
 #include "can.hpp"
 #include <string.h>
 
+//定义电调编号
 #define ESC1_Index 0
 #define ESC2_Index 1
 #define ESC3_Index 2
-
+//最大电调数量
 #define Max_ESC_Num 4
-
+//电调温度保护阈值
 #define ESC_MAX_Temperature 80
 
 class ESCNode

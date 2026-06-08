@@ -172,7 +172,7 @@ MenuState menu_control_running_page(void)
 			if(g_controlModeSem != NULL)
 				osSemaphoreRelease(g_controlModeSem);
 
-			return MenuState::MAIN_PAGE_STATE;
+			return MenuState::CONTROL_PAGE_STATE;
 		}
 	}
 
@@ -225,13 +225,12 @@ MenuState menu_mag_calib_page(void)
 	auto& key3 = Board::getKey3();
 	auto& mag  = Board::getQMC5883P();
 
-	// Content drawn on main loop's cleared buffer; BLE/battery added after
 
 	OLED_ShowChinese(0, 0, "磁力计校准");
 
 	if(mag.isCollecting())
 	{
-		// Collection in progress: prompt user to rotate device
+		
 		OLED_ShowChinese(0, 18, "旋转设备采集数据");
 
 		char buf[24];
@@ -268,4 +267,81 @@ MenuState menu_mag_calib_page(void)
 	}
 
 	return MenuState::MAG_CALIB_PAGE_STATE;
+}
+
+
+MenuState menu_esc_index_page(void)
+{
+	auto& key1 = Board::getKey1();
+	auto& key2 = Board::getKey2();
+	auto& key3 = Board::getKey3();
+	auto& esc_node = Board::getESCNode();
+
+	const int8_t  MENU_COUNT = 3;
+	const int16_t VISIBLE_Y[3] = {18, 32, 46};
+	const char* menu_names[3] = {"设为电调1", "设为电调2", "设为电调3"};
+
+	static int8_t selected_idx = 0;
+	static int8_t scroll_top   = 0;
+	static bool set_success = false;
+
+	if(!set_success)
+	{
+		for(int i = 0; i < 3; i++)
+		{
+			int8_t item_idx = scroll_top + i;
+			if(item_idx < MENU_COUNT)
+				OLED_ShowChinese(0, VISIBLE_Y[i], (char*)menu_names[item_idx]);
+		}
+
+		if(key1.getEvent() == Key::Event::ShortPress)
+		{
+			selected_idx = (selected_idx - 1 + MENU_COUNT) % MENU_COUNT;
+			if(selected_idx < scroll_top)
+				scroll_top = selected_idx;
+			if(selected_idx >= scroll_top + 3)
+				scroll_top = selected_idx - 2;
+		}
+
+		if(key2.getEvent() == Key::Event::ShortPress)
+		{
+			selected_idx = (selected_idx + 1) % MENU_COUNT;
+			if(selected_idx < scroll_top)
+				scroll_top = selected_idx;
+			if(selected_idx >= scroll_top + 3)
+				scroll_top = selected_idx - 2;
+		}
+
+		int16_t draw_frame_y_pos = VISIBLE_Y[selected_idx - scroll_top];
+		OLED_DrawRectangle(0, draw_frame_y_pos, 120, 15, 0);
+
+		Key::Event evt = key3.getEvent();
+		if(evt == Key::Event::ShortPress)
+		{
+			selected_idx = 0;
+			scroll_top = 0;
+			return MenuState::MAIN_PAGE_STATE;
+		}
+
+		if(evt == Key::Event::LongPress)
+		{
+			//发送校准命令时，务必只接目标电调在CAN总线上！否则非目标电调的编号会被覆盖，电调默认编号1
+			uint8_t targets[3] = {ESC1_Index + 1, ESC2_Index + 1, ESC3_Index + 1};
+			esc_node.set_esc_index_command(targets[selected_idx]);
+			set_success = true;
+		}
+	}
+	else
+	{
+		OLED_ShowChinese(0, 18, "设置成功");
+		if(key3.getEvent() == Key::Event::ShortPress)
+		{
+			selected_idx = 0;
+			scroll_top = 0;
+			set_success = false;
+			return MenuState::MAIN_PAGE_STATE;
+		}
+	}
+
+	return MenuState::ESC_INDEX_PAGE_STATE;
 }

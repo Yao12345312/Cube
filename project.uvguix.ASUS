@@ -70,7 +70,7 @@
       <WinId>466</WinId>
       <ViewName>Source Browser</ViewName>
       <UserString>500</UserString>
-      <TableColWidths>166</TableColWidths>
+      <TableColWidths>300</TableColWidths>
     </View>
   </TreeListPane>
 
@@ -3606,9 +3606,9 @@
       <ActiveTab>0</ActiveTab>
       <Doc>
         <Name>.\USER\main.cpp</Name>
-        <ColumnNumber>0</ColumnNumber>
-        <TopLine>44</TopLine>
-        <CurrentLine>50</CurrentLine>
+        <ColumnNumber>26</ColumnNumber>
+        <TopLine>1</TopLine>
+        <CurrentLine>6</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders>140</ContractedFolders>
         <PaneID>0</PaneID>

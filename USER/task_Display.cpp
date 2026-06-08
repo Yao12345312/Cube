@@ -34,15 +34,16 @@ void StartDisplayTask(void *argument){
 	static INA226::bat_state bat_status = INA226::bat_state::BAT_MID_POWER;
 
 	// Scrollable menu: 5 items, 3 visible slots
-	const int8_t  MENU_COUNT = 5;
+	const int8_t  MENU_COUNT = 6;
 	const int16_t VISIBLE_Y[3] = {18, 32, 46};
 
-	const char* menu_names[5] = {
+	const char* menu_names[6] = {
 		"立方体姿态",
 		"任务控制",
 		"固件版本",
 		"陀螺仪校准",
-		"磁力计校准"
+		"磁力计校准",
+		"电调编号设置"
 	};
 
 	int16_t draw_frame_y_pos = 0;
@@ -163,6 +164,9 @@ void StartDisplayTask(void *argument){
 				case 4:
 					main_menu_flag = MenuState::MAG_CALIB_PAGE_STATE;
 					break;
+				case 5:
+					main_menu_flag = MenuState::ESC_INDEX_PAGE_STATE;
+					break;
 				}
 
 				//长按后松手检测
@@ -207,6 +211,11 @@ void StartDisplayTask(void *argument){
 		case MenuState::MAG_CALIB_PAGE_STATE:
 			{
 				main_menu_flag = menu_mag_calib_page();
+				break;
+			}
+		case MenuState::ESC_INDEX_PAGE_STATE:
+			{
+				main_menu_flag = menu_esc_index_page();
 				break;
 			}
 		}

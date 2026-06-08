@@ -11,7 +11,8 @@ enum class MenuState : uint8_t { //底层状态存储类型为uint8_t
     FIRMWARE_PAGE_STATE = 4,
     CONTROL_RUNNING_STATE = 5,
     GYRO_CALIB_PAGE_STATE = 6,
-    MAG_CALIB_PAGE_STATE = 7
+    MAG_CALIB_PAGE_STATE = 7,
+    ESC_INDEX_PAGE_STATE = 8
 
 };
 
@@ -22,6 +23,7 @@ MenuState menu_firmware_page(void);
 MenuState menu_control_running_page(void);
 MenuState menu_gyro_calib_page(void);
 MenuState menu_mag_calib_page(void);
+MenuState menu_esc_index_page(void);
 
 // 控制模式选择信号量
 extern osSemaphoreId_t g_controlModeSem;
