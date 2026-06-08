@@ -75,7 +75,13 @@ static void SingleSideBalanceControl(
 
     //自适应重心变量
     static float theta_bias = 0.0f;
-
+	
+	//温度保护，如果电调温度过高，退出控制
+	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature )
+	{return;}
+	
     //如果电调没校准，则校准
     if (!esc_status[ESC1_Index].calib_flag)
 	{
@@ -166,7 +172,7 @@ static void SinglePointBalanceControl(
 	auto& buzzer = Board::getBuzzer();
 	
     const float max_balance_angle = 0.20f;
-    const float arm_angle         = 0.02f;
+    const float arm_angle         = 0.05f;
     const uint32_t arm_count_need = 20U;
 	
 	const float bias_k = 0.0002f;     //重心适应学习率
@@ -176,6 +182,12 @@ static void SinglePointBalanceControl(
 	// X/Y轴角度偏差
     static float theta_bias_x = 0.0f;
     static float theta_bias_y = 0.0f;
+	
+	//温度保护，如果电调温度过高，退出控制
+	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature )
+	{return;}
 	
     // 如果电机未校准，停止输出，进行校准
     if (!(esc_status[ESC1_Index].calib_flag &&
@@ -271,6 +283,7 @@ static void SinglePointBalanceControl(
     float out_x = LQR_Compute(theta_corr_x, (theta[1]-2.35f),theta_dot[0], wheel_speed[0], ESC1_Index);
     float out_z = LQR_Compute(theta_corr_z, 0.0f, theta_dot[2], wheel_speed[1], ESC2_Index);
     float out_y = LQR_Compute(theta_corr_y, -(theta[2]-0.64f), theta_dot[1], wheel_speed[2], ESC3_Index);
+	
     //线性ESO初始化
     static ESO_t eso_x, eso_y, eso_z;
     static bool eso_init = false;

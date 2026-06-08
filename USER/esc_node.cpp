@@ -166,7 +166,7 @@ void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 			self->esc_status_[esc_id].target_rpm = target_rpm;
 			self->esc_status_[esc_id].voltage = voltage;
 			self->esc_status_[esc_id].current = current;
-			self->esc_status_[esc_id].temperature = (temperature-273.15f);
+			self->esc_status_[esc_id].temperature = (temperature-273.15f); //开尔文转换为摄氏度
 			self->esc_status_[esc_id].calib_flag=calib_flag;
 			
 			osMutexRelease(self->m_esc_get_staus_mutex);

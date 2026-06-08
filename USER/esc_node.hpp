@@ -12,6 +12,8 @@
 
 #define Max_ESC_Num 4
 
+#define ESC_MAX_Temperature 80
+
 class ESCNode
 {
 public:

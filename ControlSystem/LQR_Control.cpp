@@ -1,14 +1,14 @@
 #include "LQR_Control.hpp"
 #include <cmath>
 
-//反馈系数 [ESC][0=angle, 1=rate, 2=wheel_speed]
+//反馈系数 [ESC_index][0=angle, 1=rate, 2=wheel_speed]
 volatile float K_lqr[3][3] = {
     {-120.0f, -13.0f, 0.00004f},  // ESC1 -> X
     {   0.0f,  13.0f, 0.00002f},  // ESC2 -> Z
     {-120.0f, -13.0f, 0.00004f},  // ESC3 -> Y
 };
 
-//前馈系数 [ESC][0=angle, 1=rate, 2=wheel_self, 3=wheel_cross]
+//前馈系数 [ESC_index][0=angle, 1=rate, 2=wheel_self, 3=wheel_cross]
 volatile float K_ff[3][4] = {
     {  0.0f  },  // ESC1
     {  0.0f  },  // ESC2

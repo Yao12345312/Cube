@@ -123,6 +123,6 @@ void create_application_tasks(void)
 //        printf("Failed to create CPUUsageMonitor Task!\r\n");
 //        Error_Handler();
 //    }
-//	
+	
 	printf("All tasks created successfully!\r\n");
 }
