@@ -1,5 +1,5 @@
 #include "task_Control.hpp"
-#include "task_CPUMonitor.h"
+#include "task_CPUMonitor.hpp"
 #include "esc_node.hpp"
 #include "board.hpp"
 #include "MahonyAHRS.hpp"

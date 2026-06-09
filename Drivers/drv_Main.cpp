@@ -2,7 +2,7 @@
 #include "task_Control.hpp"
 #include "task_Display.hpp"
 #include "task_Communication.hpp"
-#include "task_CPUMonitor.h"
+#include "task_CPUMonitor.hpp"
 #include "LQR_Control.hpp"
 #include "param.hpp"
 #include "board.hpp"

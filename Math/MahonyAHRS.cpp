@@ -13,7 +13,7 @@ MahonyAHRS::MahonyAHRS(float freq, float kp, float ki)
     integralFBx = integralFBy = integralFBz = 0.0f;
 }
 
-//求平方根倒数
+//求平方根倒数(使用单精度FPU）
 inline float MahonyAHRS::invSqrt(float x)
 {
     float inv = 1.0f / sqrtf(x);

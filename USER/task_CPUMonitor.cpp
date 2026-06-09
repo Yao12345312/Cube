@@ -1,4 +1,4 @@
-#include "task_CPUMonitor.h"
+#include "task_CPUMonitor.hpp"
 #include "cmsis_os2.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -6,10 +6,10 @@
 
 #define MAX_TASKS 16
 
-// Task handle
+//定义任务句柄
 osThreadId_t CPUUsageMonitorTaskHandle = NULL;
 
-// Task attributes
+//定义任务属性
 const osThreadAttr_t CPUUsageMonitorTask_attributes = {
     .name = "CPUMonitorTask",
     .stack_size = 2 * 1024,

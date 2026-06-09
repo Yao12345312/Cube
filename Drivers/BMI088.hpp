@@ -56,9 +56,6 @@ private:
     uint16_t m_gyroCsPin;
 
     bmi08_dev m_dev;
-
-    uint8_t m_accDevAddr;
-    uint8_t m_gyroDevAddr;
 	
 	float m_accel_offset[3];     // 加速度计零偏 (m/s2)
     float m_gyro_offset[3];      // 陀螺仪零偏 (°/s)
