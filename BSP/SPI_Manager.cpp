@@ -13,7 +13,10 @@ bool SPI_SetMode(SPI_HandleTypeDef* hspi, uint32_t polarity, uint32_t phase)
     osMutexAcquire(spiMutex, osWaitForever);
 	//如果模式相同则不切换
 	if (currentPolarity == polarity && currentPhase == phase)
+       {
+        osMutexRelease(spiMutex);
         return true;
+       } 
 	
     /* 等待SPI空闲 */
     while (HAL_SPI_GetState(hspi) != HAL_SPI_STATE_READY); 

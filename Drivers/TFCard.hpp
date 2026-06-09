@@ -1,4 +1,7 @@
 #pragma once
+
+#include "lfs_port.h"
+
 extern "C"
 {
 #include "lfs.h"

@@ -687,6 +687,11 @@
               <FileType>1</FileType>
               <FilePath>.\LittleFS\lfs_util.c</FilePath>
             </File>
+            <File>
+              <FileName>lfs_port.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\LittleFS\lfs_port.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
