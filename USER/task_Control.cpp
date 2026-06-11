@@ -29,6 +29,8 @@ osMessageQueueId_t g_dispSensorQueue = NULL;
 
 osSemaphoreId_t g_controlModeSem = NULL;
 uint8_t g_selected_control_mode = 0xFF;  //模式切换标志位，无任务为0xFF
+uint8_t g_rc_control_mode = 0xFF;
+float g_rc_manual_y = 0.0f;
 
 //校准状态全局变量
 osSemaphoreId_t g_calibSem = NULL;
@@ -539,7 +541,7 @@ void StartControlTask(void *argument)
             osSemaphoreAcquire(g_controlModeSem, 0);
 		
 		//模式1：单边
-        if(g_selected_control_mode == 0)
+        if(g_selected_control_mode == 0 || g_rc_control_mode == 0)
         {
             
             SingleSideBalanceControl(
@@ -555,7 +557,7 @@ void StartControlTask(void *argument)
                 control_armed);
         }
 		//模式2：单点
-        else if(g_selected_control_mode == 1)
+        else if(g_selected_control_mode == 1 || g_rc_control_mode == 1)
         {
 			
 			

@@ -1,5 +1,6 @@
 #include "mavlink_bridge.hpp"
 #include "board.hpp"
+#include "menu.hpp"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,12 +106,39 @@ namespace MAVLink {
 
 				   //解析地面站控制指令
 				   case MAVLINK_MSG_ID_COMMAND_LONG:{
-					//解码控制命令信息
 					mavlink_command_long_t command;
 					mavlink_msg_command_long_decode(&mav_msg, &command);
 
+					if(command.command == 0x4101){
+						HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
+						g_rc_control_mode = 0;
+						if(g_controlModeSem != NULL)
+							osSemaphoreRelease(g_controlModeSem);
+					}
+					else if(command.command == 0x4102){
+						HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
+						g_rc_control_mode = 1;
+						if(g_controlModeSem != NULL)
+							osSemaphoreRelease(g_controlModeSem);
+					}
+					else if(command.command == 0x4103){
+						HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_RESET);
+						g_rc_control_mode = 0xFF;
+						if(g_controlModeSem != NULL)
+							osSemaphoreRelease(g_controlModeSem);
+					}
 
 					break;
+					}
+					//解析遥控器偏航控制指令
+					case MAVLINK_MSG_ID_MANUAL_CONTROL:{
+						mavlink_manual_control_t manual;
+						mavlink_msg_manual_control_decode(&mav_msg, &manual);
+						float y_val = (float)manual.y / 500.0f;
+						if(y_val > 2.0f) y_val = 2.0f;
+						if(y_val < -2.0f) y_val = -2.0f;
+						g_rc_manual_y = y_val;
+						break;
 					}
 
 					//没有对应处理ID，退出

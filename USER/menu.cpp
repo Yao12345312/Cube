@@ -165,7 +165,7 @@ MenuState menu_control_running_page(void)
 		if(evt == Key::Event::ShortPress)
 		{
 			//关闭电调输出
-			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_RESET);
+			 
 
 			g_selected_control_mode = 0xFF;  // 退出任务模式
 

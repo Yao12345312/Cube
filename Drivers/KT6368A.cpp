@@ -104,15 +104,16 @@ bool BluetoothDriver::autoBaudScan()
 
         if (len > 0 && strstr(resp, "Q") != nullptr)
         {	
-			//设置蓝牙模块名称
-            sendAT("AT+BMKT6368A\r\n", resp, sizeof(resp));
-            osDelay(200);
+			
 			//关闭上电回传
             sendAT("AT+CR00\r\n", resp, sizeof(resp));
             osDelay(200);
 			//配置波特率
             sendAT("AT+CT09\r\n", resp, sizeof(resp));
-            osDelay(1000);
+            osDelay(500);
+			//设置蓝牙模块BLE名称
+            sendAT("AT+BMAC-6368\r\n", resp, sizeof(resp));
+            osDelay(500);	
 			//芯片复位
             sendAT("AT+CZ\r\n", resp, sizeof(resp));
             osDelay(300);
