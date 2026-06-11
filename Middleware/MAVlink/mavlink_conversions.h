@@ -1,5 +1,4 @@
-#ifndef  _MAVLINK_CONVERSIONS_H_
-#define  _MAVLINK_CONVERSIONS_H_
+#pragma once
 
 #ifndef MAVLINK_NO_CONVERSION_HELPERS
 
@@ -12,7 +11,7 @@
 #include <math.h>
 
 #ifndef M_PI_2
-    #define M_PI_2 ((float)asinf(1))
+    #define M_PI_2 ((float)asin(1))
 #endif
 
 /**
@@ -39,10 +38,10 @@
  */
 MAVLINK_HELPER void mavlink_quaternion_to_dcm(const float quaternion[4], float dcm[3][3])
 {
-    double a = quaternion[0];
-    double b = quaternion[1];
-    double c = quaternion[2];
-    double d = quaternion[3];
+    double a = (double)quaternion[0];
+    double b = (double)quaternion[1];
+    double c = (double)quaternion[2];
+    double d = (double)quaternion[3];
     double aSq = a * a;
     double bSq = b * b;
     double cSq = c * c;
@@ -211,6 +210,3 @@ MAVLINK_HELPER void mavlink_euler_to_dcm(float roll, float pitch, float yaw, flo
 }
 
 #endif // MAVLINK_NO_CONVERSION_HELPERS
-
-#endif // _MAVLINK_CONVERSIONS_H_
-

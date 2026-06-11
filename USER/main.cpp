@@ -6,9 +6,9 @@
 #include "uart3Driver.hpp"
 #include "drv_Main.hpp"
 
-#if 1 //Èç¹ûÃ»ÓĞÕâ¶Î£¬ÔòĞèÒªÔÚtargetÑ¡ÏîÖĞÑ¡ÔñÊ¹ÓÃUSE microLIB
+#if 1 //å¦‚æœæ²¡æœ‰è¿™æ®µï¼Œåˆ™éœ€è¦åœ¨targeté€‰é¡¹ä¸­é€‰æ‹©ä½¿ç”¨USE microLIB
 
-	__asm(".global __use_no_semihosting\n\t") ;//×¢ÊÍ±¾ĞĞ, ·½·¨1
+	__asm(".global __use_no_semihosting\n\t") ;//æ³¨é‡Šæœ¬è¡Œ, æ–¹æ³•1
 	extern "C"
 	{
 		struct __FILE {
@@ -37,9 +37,9 @@
 void SystemClock_Config(void);
 void DriverInitTask(void* argument);
 	
-//³õÊ¼»¯ÈÎÎñ¶ÔÏó¾ä±ú
+//åˆå§‹åŒ–ä»»åŠ¡å¯¹è±¡å¥æŸ„
 osThreadId_t initTaskHandle;
-//Ïß³ÌÃèÊö½á¹¹Ìå
+//çº¿ç¨‹æè¿°ç»“æ„ä½“
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 1024,
@@ -48,34 +48,34 @@ const osThreadAttr_t defaultTask_attributes = {
 
 int main(void)
 {
-  //HAL¿â³õÊ¼»¯
+  //HALåº“åˆå§‹åŒ–
   HAL_Init();
-  //ÏµÍ³Ê±ÖÓ³õÊ¼»¯
+  //ç³»ç»Ÿæ—¶é’Ÿåˆå§‹åŒ–
   SystemClock_Config();
-  //osÄÚºË³õÊ¼»¯
+  //oså†…æ ¸åˆå§‹åŒ–
   osKernelInitialize();
-  //´´½¨³õÊ¼»¯ÈÎÎñ
+  //åˆ›å»ºåˆå§‹åŒ–ä»»åŠ¡
   initTaskHandle = osThreadNew(DriverInitTask, NULL, &defaultTask_attributes);
   
   if (initTaskHandle == NULL) {
         Error_Handler();
     }
 	
-  //¿ªÆôÈÎÎñµ÷¶ÈÆ÷
+  //å¼€å¯ä»»åŠ¡è°ƒåº¦å™¨
   osKernelStart();
 
   while(1){} 
 	
 }
-//Çı¶¯³õÊ¼»¯ÈÎÎñ
+//é©±åŠ¨åˆå§‹åŒ–ä»»åŠ¡
 void DriverInitTask(void * argument)
 {	
-	//³õÊ¼»¯Ó²¼şÇı¶¯
+	//åˆå§‹åŒ–ç¡¬ä»¶é©±åŠ¨
 	init_drv_Main();
-	//³õÊ¼»¯Ó¦ÓÃ³ÌĞò
+	//åˆå§‹åŒ–åº”ç”¨ç¨‹åº
 	create_application_tasks();
 	
-	//É¾³ı³õÊ¼»¯ÈÎÎñ
+	//åˆ é™¤åˆå§‹åŒ–ä»»åŠ¡
 	vTaskDelete(NULL);
 }
 

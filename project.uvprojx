@@ -341,7 +341,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER, STM32H743xx</Define>
               <Undefine></Undefine>
-              <IncludePath>.\CMSIS;.\Drivers;.\Math;.\Middleware;.\USER;.\HALLIB\STM32H7xx_HAL_Driver\Inc;.\BSP;.\Middleware\RTOS\include;.\Middleware\RTOS;.\Middleware\RTOS\portable\ARM_CM7\r0p1;.\Middleware\RTOS\CMSIS_RTOS_V2;.\Middleware\MAVlink;.\Middleware\MAVlink\common;.\Middleware\MAVlink\standard;.\LittleFS;.\u8g2;.\Middleware\USBDevice\App;.\Middleware\USBDevice\Target;.\Middleware\USBDevice\Library;.\ControlSystem;.\Middleware\DroneCan\include;.\Middleware\DroneCan</IncludePath>
+              <IncludePath>.\CMSIS;.\Drivers;.\Math;.\Middleware;.\USER;.\HALLIB\STM32H7xx_HAL_Driver\Inc;.\BSP;.\Middleware\RTOS\include;.\Middleware\RTOS;.\Middleware\RTOS\portable\ARM_CM7\r0p1;.\Middleware\RTOS\CMSIS_RTOS_V2;.\Middleware\MAVlink;.\Middleware\MAVlink\commonACFly;.\Middleware\MAVlink\minimalACFly;.\LittleFS;.\u8g2;.\Middleware\USBDevice\App;.\Middleware\USBDevice\Target;.\Middleware\USBDevice\Library;.\ControlSystem;.\Middleware\DroneCan\include;.\Middleware\DroneCan</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -881,16 +881,6 @@
               <FileName>mavlink_bridge.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\Middleware\MAVlink\mavlink_bridge.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>mavlink.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Middleware\MAVlink\standard\mavlink.h</FilePath>
-            </File>
-            <File>
-              <FileName>mavlink_avoid_err.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Middleware\MAVlink\mavlink_avoid_err.h</FilePath>
             </File>
           </Files>
         </Group>

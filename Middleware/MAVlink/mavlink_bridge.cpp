@@ -4,110 +4,118 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// æä¾›å¤–éƒ¨MAVLinké€šé“ç¼“å†²åŒºï¼ˆcommonACFly/mavlink.h é…ç½®è¦æ±‚ï¼‰
+// MAVLINK_EXTERNAL_RX_STATUS å’Œ MAVLINK_EXTERNAL_RX_BUFFER å·²å®šä¹‰ï¼Œ
+
+extern "C" {
+mavlink_status_t m_mavlink_status[MAVLINK_COMM_NUM_BUFFERS];
+mavlink_message_t m_mavlink_buffer[MAVLINK_COMM_NUM_BUFFERS];
+}
+
 namespace {
-	//ÅäÖÃ´ËÉè±¸ÏµÍ³IDºÍ×é¼şID
+	//é…ç½®æ­¤è®¾å¤‡ç³»ç»ŸIDå’Œç»„ä»¶ID
 	static uint8_t mav_sysid = 1;
     static uint8_t mav_compid = 1;
-	//ÅäÖÃ·¢ËÍ»º³åÇø
+	//é…ç½®å‘é€ç¼“å†²åŒº
 	static uint8_t mav_tx_buf[MAVLINK_TX_BUF_LEN];
-	//volatileĞŞÊÎ·ÀÖ¹±àÒëÓÅ»¯£¬È·±£Ã¿´Î¶ÁÈ¡ÕæÊµ×´Ì¬
+	//volatileä¿®é¥°é˜²æ­¢ç¼–è¯‘ä¼˜åŒ–ï¼Œç¡®ä¿æ¯æ¬¡è¯»å–çœŸå®çŠ¶æ€
 	static volatile bool mavlink_connected = false;
-	
-	 // MAVLink½âÎöÆ÷×´Ì¬
+
+	 // MAVLinkè§£æå™¨çŠ¶æ€
     static mavlink_status_t mav_status;
     static mavlink_message_t mav_msg;
-    
-    // MAVLink×´Ì¬ĞÅÏ¢
+
+    // MAVLinkçŠ¶æ€ä¿¡æ¯
     static struct {
-        uint32_t last_hb_time;      // ×îºóÊÕµ½ĞÄÌøµÄÊ±¼ä
-        uint8_t link_active;        // Á´Â·ÊÇ·ñ¼¤»î (0:¶Ï¿ª, 1:Á¬½Ó)
+        uint32_t last_hb_time;      // æœ€åæ”¶åˆ°å¿ƒè·³çš„æ—¶é—´
+        uint8_t link_active;        // é“¾è·¯æ˜¯å¦æ¿€æ´» (0:æ–­å¼€, 1:è¿æ¥)
     } mav_status_info = {
         .last_hb_time = 0,
         .link_active = 0
     };
-    
-    // »¥³âËø±£»¤×´Ì¬±äÁ¿
+
+    // äº’æ–¥é”ä¿æŠ¤çŠ¶æ€å˜é‡
     static osMutexId_t mav_status_mutex = NULL;
-	
+
 }
 
 
 namespace MAVLink {
-	
+
 	void Init(void) {
-        // ´´½¨»¥³âËø
+        // åˆ›å»ºäº’æ–¥é”
         mav_status_mutex = osMutexNew(NULL);
         if (mav_status_mutex == NULL) {
             printf("MAVLink: Failed to create mutex\r\n");
         } else {
             printf("MAVLink: Initialized successfully\r\n");
         }
-        
-        // ³õÊ¼»¯MAVLink½âÎöÆ÷×´Ì¬
+
+        // åˆå§‹åŒ–MAVLinkè§£æå™¨çŠ¶æ€
         memset(&mav_status, 0, sizeof(mav_status));
         memset(&mav_msg, 0, sizeof(mav_msg));
-        
-        // ³õÊ¼»¯×´Ì¬ĞÅÏ¢
+
+        // åˆå§‹åŒ–çŠ¶æ€ä¿¡æ¯
         mav_status_info.last_hb_time = osKernelGetTickCount();
         mav_status_info.link_active = 0;
         mavlink_connected = false;
     }
-	
-	//ÉèÖÃmavlinkÁ¬½Ó×´Ì¬
+
+	//è®¾ç½®mavlinkè¿æ¥çŠ¶æ€
 	void set_mavlink_connect_status(bool status){ mavlink_connected=status; }
-	//»ñÈ¡mavlinkÁ¬½Ó×´Ì¬
+	//è·å–mavlinkè¿æ¥çŠ¶æ€
 	bool get_mavlink_connect_status(void){return mavlink_connected;}
-	
-	//MAVlinkĞ­Òé½âÎöÆ÷
+
+	//MAVlinkåè®®è§£æå™¨
 	void ParseData(const uint8_t* data, uint16_t len) {
         if (data == NULL || len == 0) {return;}
-    
-        // Öğ×Ö½ÚÎ¹¸øMAVLink½âÎöÆ÷
+
+        // é€å­—èŠ‚å–‚ç»™MAVLinkè§£æå™¨
         for (uint16_t i = 0; i < len; i++) {
             if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &mav_msg, &mav_status) == MAVLINK_FRAMING_OK) {
-                // ½âÎö³É¹¦£¬¸ù¾İÏûÏ¢ID´¦Àí
+                // è§£ææˆåŠŸï¼Œæ ¹æ®æ¶ˆæ¯IDå¤„ç†
                 switch (mav_msg.msgid) {
-					
-					
-					//½âÎöµØÃæÕ¾ĞÄÌø°ü
+
+
+					//è§£æåœ°é¢ç«™å¿ƒè·³åŒ…
                     case MAVLINK_MSG_ID_HEARTBEAT: {
-                        // ½âÂëĞÄÌøÏûÏ¢
+                        // è§£ç å¿ƒè·³æ¶ˆæ¯
                         mavlink_heartbeat_t hb;
                         mavlink_msg_heartbeat_decode(&mav_msg, &hb);
-                        
-                        // Ê¹ÓÃ»¥³âËø±£»¤×´Ì¬¸üĞÂ
+
+                        // ä½¿ç”¨äº’æ–¥é”ä¿æŠ¤çŠ¶æ€æ›´æ–°
                         if (mav_status_mutex != NULL) {
                             osMutexAcquire(mav_status_mutex, osWaitForever);
                         }
-                        
+
                         mav_status_info.last_hb_time = osKernelGetTickCount();
-                        //Èç¹ûÖ®Ç°²»ÔÚÁ¬½Ó×´Ì¬£¬ĞŞ¸ÄÁ¬½Ó×´Ì¬Îª1£¨ÒÑÁ¬½Ó£©
+                        //å¦‚æœä¹‹å‰ä¸åœ¨è¿æ¥çŠ¶æ€ï¼Œä¿®æ”¹è¿æ¥çŠ¶æ€ä¸º1ï¼ˆå·²è¿æ¥ï¼‰
                         if (mav_status_info.link_active != 1) {
                             mav_status_info.link_active = 1;
                             set_mavlink_connect_status(true);
-                            printf("MAVLink: Heartbeat received from system %d, comp %d\r\n", 
+                            printf("MAVLink: Heartbeat received from system %d, comp %d\r\n",
                                    mav_msg.sysid, mav_msg.compid);
                         }
-                        
+
                         if (mav_status_mutex != NULL) {
                             osMutexRelease(mav_status_mutex);
                         }
                         break;
                     }
-					
-				   //½âÎöµØÃæÕ¾¿ØÖÆÖ¸Áî
+
+				   //è§£æåœ°é¢ç«™æ§åˆ¶æŒ‡ä»¤
 				   case MAVLINK_MSG_ID_COMMAND_LONG:{
-					//½âÂë¿ØÖÆÃüÁîĞÅÏ¢
+					//è§£ç æ§åˆ¶å‘½ä»¤ä¿¡æ¯
 					mavlink_command_long_t command;
 					mavlink_msg_command_long_decode(&mav_msg, &command);
-					
-					   
+
+
 					break;
 					}
-					
-					//Ã»ÓĞ¶ÔÓ¦´¦ÀíID£¬ÍË³ö
+
+					//æ²¡æœ‰å¯¹åº”å¤„ç†IDï¼Œé€€å‡º
                     default:
-                        // ÆäËûÏûÏ¢¿ÉÒÔºöÂÔ»ò¸ù¾İĞèÒªÌí¼Ó´¦Àí
+                        // å…¶ä»–æ¶ˆæ¯å¯ä»¥å¿½ç•¥æˆ–æ ¹æ®éœ€è¦æ·»åŠ å¤„ç†
                         break;
                 }
             }
@@ -116,35 +124,35 @@ namespace MAVLink {
 
 
 void SendHeartbeat(void)
-{	
-	// ·¢ËÍ½ÚÁ÷ÖÁ1HZ
+{
+	// å‘é€èŠ‚æµè‡³1HZ
 	static uint32_t last_send_tick = 0;
 	uint32_t now = osKernelGetTickCount();
 	if ((now - last_send_tick) < 1000U) {
 		return;
 	}
-	
+
 	last_send_tick = now;
-	//»ñÈ¡´®¿ÚÊµÀı
+	//è·å–ä¸²å£å®ä¾‹
 	auto& uart = Board::getUart1();
-	
-    // ´´½¨ MAVLink ÏûÏ¢½á¹¹Ìå
+
+    // åˆ›å»º MAVLink æ¶ˆæ¯ç»“æ„ä½“
     mavlink_message_t msg;
 
-    // MAV_TYPE_QUADROTOR±íÊ¾·ÉĞĞÆ÷ÀàĞÍ
-    uint8_t type = MAV_TYPE_QUADROTOR;      
+    // MAV_TYPE_QUADROTORè¡¨ç¤ºé£è¡Œå™¨ç±»å‹
+    uint8_t type = MAV_TYPE_QUADROTOR;
 
     // MAV_AUTOPILOT_ARDUPILOTMEGA
     uint8_t autopilot = MAV_AUTOPILOT_ARDUPILOTMEGA;
 
-    // base_mode ºÍ custom_mode Í¨³£Îª 0
+    // base_mode å’Œ custom_mode é€šå¸¸ä¸º 0
     uint8_t base_mode = MAV_MODE_FLAG_SAFETY_ARMED | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint32_t custom_mode = 0;
 
-    // system_status£º MAV_STATE_ACTIVE
+    // system_statusï¼š MAV_STATE_ACTIVE
     uint8_t system_status = MAV_STATE_ACTIVE;
 
-    // ´ò°ü HEARTBEAT ÏûÏ¢
+    // æ‰“åŒ… HEARTBEAT æ¶ˆæ¯
     mavlink_msg_heartbeat_pack(mav_sysid,
                                mav_compid,
                                &msg,
@@ -154,26 +162,26 @@ void SendHeartbeat(void)
                                custom_mode,
                                system_status);
 
-    // ĞòÁĞ»¯³É×Ö½ÚÁ÷
+    // åºåˆ—åŒ–æˆå­—èŠ‚æµ
     uint16_t len = mavlink_msg_to_send_buffer(mav_tx_buf, &msg);
 
-    // Í¨¹ı DMA ·¢ËÍ
+    // é€šè¿‡ DMA å‘é€
 	uart.send(mav_tx_buf,len);
 }
-	
+
 void SendBatteryStatus(float voltage_v,
                        float current_a,
                        int8_t battery_remaining)
-{	
-	//·¢ËÍ½ÚÁ÷ÖÁ1HZ
+{
+	//å‘é€èŠ‚æµè‡³1HZ
 	static uint32_t last_send_tick = 0;
 	uint32_t now = osKernelGetTickCount();
 	if ((now - last_send_tick) < 1000U) {
 		return;
 	}
-	
+
 	last_send_tick = now;
-	
+
     auto& uart = Board::getUart1();
 
     mavlink_message_t msg;
@@ -182,7 +190,7 @@ void SendBatteryStatus(float voltage_v,
     voltages[0] = (uint16_t)(voltage_v * 1000.0f);
 
     int16_t current_battery = (int16_t)(current_a * 100.0f);
-
+	
     int32_t current_consumed = -1;
     int32_t energy_consumed = -1;
     int16_t temperature = INT16_MAX;
@@ -190,7 +198,13 @@ void SendBatteryStatus(float voltage_v,
     uint8_t id = 0;
     uint8_t battery_function = MAV_BATTERY_FUNCTION_ALL;
     uint8_t type = MAV_BATTERY_TYPE_LIPO;
-	
+
+    int32_t time_remaining = 0;
+    uint8_t charge_state = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
+    uint16_t voltages_ext[4] = {0};
+    uint8_t mode = MAV_BATTERY_MODE_UNKNOWN;
+    uint32_t fault_bitmask = 0;
+
     mavlink_msg_battery_status_pack(
         mav_sysid,
         mav_compid,
@@ -203,7 +217,12 @@ void SendBatteryStatus(float voltage_v,
         current_battery,
         current_consumed,
         energy_consumed,
-        battery_remaining
+        battery_remaining,
+        time_remaining,
+        charge_state,
+        voltages_ext,
+        mode,
+        fault_bitmask
     );
 
     uint16_t len = mavlink_msg_to_send_buffer(mav_tx_buf, &msg);
@@ -222,7 +241,7 @@ void SendAttitude(float roll,
 
     mavlink_message_t msg;
 
-    // Ê±¼ä´Á£¨ms£©
+    // æ—¶é—´æˆ³ï¼ˆmsï¼‰
     uint32_t time_boot_ms = osKernelGetTickCount();
 
     mavlink_msg_attitude_pack(
@@ -242,10 +261,8 @@ void SendAttitude(float roll,
 
     uart.send(mav_tx_buf, len);
 }
-	
-	
-	
-	
+
+
+
+
 }
-
-

@@ -79,7 +79,6 @@ void StartCPUUsageMonitorTask(void *argument)
 {	
 	uint32_t next_wake = osKernelGetTickCount();
 	
-	
     while(1) 
 	{
         g_cpu_usage = ComputeCPUUsage();
