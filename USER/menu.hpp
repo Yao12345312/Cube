@@ -29,7 +29,7 @@ MenuState menu_esc_index_page(void);
 extern osSemaphoreId_t g_controlModeSem;
 extern uint8_t g_selected_control_mode;  // 0=单边控制, 1=单点控制, 2=单边起跳, 3=单点起跳
 extern uint8_t g_rc_control_mode;        // 遥控器控制模式 0xFF=无命令, 0=单边, 1=单点
-extern float g_rc_manual_y;
+extern volatile float g_rc_manual_y;
 
 // 校准信号量
 extern osSemaphoreId_t g_calibSem;

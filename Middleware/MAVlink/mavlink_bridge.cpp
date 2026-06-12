@@ -108,19 +108,21 @@ namespace MAVLink {
 				   case MAVLINK_MSG_ID_COMMAND_LONG:{
 					mavlink_command_long_t command;
 					mavlink_msg_command_long_decode(&mav_msg, &command);
-
+				    //单边控制
 					if(command.command == 0x4101){
 						HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
 						g_rc_control_mode = 0;
 						if(g_controlModeSem != NULL)
 							osSemaphoreRelease(g_controlModeSem);
 					}
+					//单点控制
 					else if(command.command == 0x4102){
 						HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);
 						g_rc_control_mode = 1;
 						if(g_controlModeSem != NULL)
 							osSemaphoreRelease(g_controlModeSem);
 					}
+					//电调断电
 					else if(command.command == 0x4103){
 						HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_RESET);
 						g_rc_control_mode = 0xFF;

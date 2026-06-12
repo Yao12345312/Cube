@@ -30,7 +30,7 @@ osMessageQueueId_t g_dispSensorQueue = NULL;
 osSemaphoreId_t g_controlModeSem = NULL;
 uint8_t g_selected_control_mode = 0xFF;  //模式切换标志位，无任务为0xFF
 uint8_t g_rc_control_mode = 0xFF;
-float g_rc_manual_y = 0.0f;
+volatile float g_rc_manual_y = 0.0f;
 
 //校准状态全局变量
 osSemaphoreId_t g_calibSem = NULL;
@@ -274,17 +274,26 @@ static void SinglePointBalanceControl(
 //		}	
 //    }
 	
-    // LQR + 前馈控制
+    //获取角度误差
     const float theta_x = theta[1];// - theta_bias_x;
     const float theta_y = theta[2];// - theta_bias_y;
 	
     const float theta_corr_x =  theta_x - K_lqr[ESC1_Index][2] * wheel_speed[0] - K_lqr[ESC2_Index][2] * wheel_speed[1];
     const float theta_corr_y = -theta_y - K_lqr[ESC3_Index][2] * wheel_speed[2] - K_lqr[ESC2_Index][2] * wheel_speed[1];
-    const float theta_corr_z = -K_lqr[ESC2_Index][2] * wheel_speed[1];
+	const float theta_corr_z = -K_lqr[ESC2_Index][2] * wheel_speed[1];
 	
-    float out_x = LQR_Compute(theta_corr_x, (theta[1]-2.35f),theta_dot[0], wheel_speed[0], ESC1_Index);
-    float out_z = LQR_Compute(theta_corr_z, 0.0f, theta_dot[2], wheel_speed[1], ESC2_Index);
+	//获取遥控器通道输入值
+    float rc_yaw = g_rc_manual_y;
+    if (fabsf(rc_yaw) < 0.04f) rc_yaw = 0.0f;
+    const float rc_yaw_cmd = rc_yaw * 2.0f;
+	
+	//获取LQR控制器输出
+    float out_x = LQR_Compute(theta_corr_x, (theta[1]-2.35f), theta_dot[0], wheel_speed[0], ESC1_Index);
+    float out_z = LQR_Compute(theta_corr_z, 0.0f, theta_dot[2], wheel_speed[1], ESC2_Index) + rc_yaw_cmd;
     float out_y = LQR_Compute(theta_corr_y, -(theta[2]-0.64f), theta_dot[1], wheel_speed[2], ESC3_Index);
+	//遥控器输入值缩放后叠加到输出
+	out_x += 0.15f * rc_yaw_cmd;
+	out_y -= 0.15f * rc_yaw_cmd;
 	
     //线性ESO初始化
     static ESO_t eso_x, eso_y, eso_z;
@@ -298,8 +307,24 @@ static void SinglePointBalanceControl(
 	//线性ESO状态更新
     ESO_Update(&eso_x, theta[1], out_x, 0.002f);
     ESO_Update(&eso_y, theta[2], out_y, 0.002f);
-    ESO_Update(&eso_z, yaw, out_z, 0.002f);
-
+	
+	//Z轴ESO更新前做相位解缠绕，防止旋转多圈后yaw角跳变引入抖动
+    static float yaw_unwrapped = 0.0f;
+    static float yaw_prev = 0.0f;
+    static bool yaw_first = true;
+    if (yaw_first) {
+        yaw_unwrapped = yaw;
+        yaw_prev = yaw;
+        yaw_first = false;
+    }
+    float dyaw = yaw - yaw_prev;
+    if (dyaw > PI) dyaw -= 2 * PI;
+    else if (dyaw < -PI) dyaw += 2 * PI;
+    yaw_unwrapped += dyaw;
+    yaw_prev = yaw;
+	
+    ESO_Update(&eso_z, yaw_unwrapped, out_z, 0.002f);
+	
     // 扰动补偿项计算，补偿总扰动z3估计值
     const float comp_x = eso_x.z3 / eso_x.b0;
     const float comp_y = eso_y.z3 / eso_y.b0;
@@ -311,7 +336,6 @@ static void SinglePointBalanceControl(
 	esc_current_cmd[0] = (int32_t)((out_x + z_axis_Compensation - comp_x) * 1000.0f);
 	esc_current_cmd[1] = (int32_t)((out_z + z_axis_Compensation - comp_z) * 1000.0f);
     esc_current_cmd[2] = (int32_t)((out_y + z_axis_Compensation - comp_y) * 1000.0f);
-	
 	}
 	
     esc_node.send_esc_current_commands(esc_current_cmd, 3);
@@ -387,7 +411,7 @@ void StartControlTask(void *argument)
     //电调状态
     ESCNode::ESCStatusCache esc_status[Max_ESC_Num] = {0};
     int32_t esc_current_cmd[3] = {0};
-
+	
     uint32_t log_counter = 0;
     uint32_t calib_counter = 0;
     uint32_t arm_counter = 0;
@@ -401,7 +425,7 @@ void StartControlTask(void *argument)
         -2.35f,  // 单点X轴
         -0.64f   // 单点Y轴
     };
-
+	
     //系统时间戳
     uint32_t next_wake = osKernelGetTickCount();
 
@@ -506,10 +530,10 @@ void StartControlTask(void *argument)
                 osMessageQueuePut(g_dispSensorQueue, &sensor_data, 0, 0);
             }
 		}
-
+		
         //CAN收发
         esc_node.spin_once();
-
+		
         //获取电调状态
         esc_node.get_esc_status(ESC1_Index, esc_status[ESC1_Index]);
         esc_node.get_esc_status(ESC2_Index, esc_status[ESC2_Index]);
@@ -543,7 +567,7 @@ void StartControlTask(void *argument)
 		//模式1：单边
         if(g_selected_control_mode == 0 || g_rc_control_mode == 0)
         {
-            
+           
             SingleSideBalanceControl(
                 esc_node,
                 esc_status,
@@ -560,21 +584,18 @@ void StartControlTask(void *argument)
         else if(g_selected_control_mode == 1 || g_rc_control_mode == 1)
         {
 			
-			
-		    	SinglePointBalanceControl(
-	                esc_node,
-	                esc_status,
-	                theta,
-	                theta_dot,
-	                wheel_speed,
-	                esc_current_cmd,
-	                yaw,
-	                calib_counter,
-	                arm_counter,
-					adjust_counter,
-	                control_armed);
-             
-					
+		    SinglePointBalanceControl(
+	              esc_node,
+	              esc_status,
+	              theta,
+	              theta_dot,
+	              wheel_speed,
+	              esc_current_cmd,
+	              yaw,
+	              calib_counter,
+	              arm_counter,
+				  adjust_counter,
+	              control_armed);		
 		}
         //模式3：单边起跳
         else if(g_selected_control_mode == 2)
