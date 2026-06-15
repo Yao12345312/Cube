@@ -12,7 +12,7 @@ osThreadId_t communicationTaskHandle = NULL;
 //定义任务属性
 const osThreadAttr_t communicationTask_attributes = {
     .name = "CommunicationTask",
-    .stack_size = 4 * 1024,      // 4K
+    .stack_size = 8 * 1024,      // 8K
     .priority = (osPriority_t) osPriorityNormal,
 };
 

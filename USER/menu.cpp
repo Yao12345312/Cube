@@ -45,9 +45,9 @@ MenuState menu_task_page(void)
 	auto& key3 = Board::getKey3();
 	
 	
-	const int8_t  MENU_COUNT = 4;
+	const int8_t  MENU_COUNT = 5;
 	const int16_t VISIBLE_Y[3] = {18, 32, 46};
-	const char* menu_names[4] = {"单边控制", "单点控制", "单边起跳", "单点起跳"};
+	const char* menu_names[5] = {"单边控制", "单点控制", "单边起跳", "单点起跳","转速测试"};
 
 	static int8_t selected_idx = 0;
 	static int8_t scroll_top   = 0;
@@ -151,7 +151,13 @@ MenuState menu_control_running_page(void)
 		//buzzer.beep(500,200);
 		OLED_ShowChinese(0, 18, "单点起跳");
 	}
-		
+	
+	else if(g_selected_control_mode == 4)
+	{
+		//buzzer.beep(500,200);
+		OLED_ShowChinese(0, 18, "转速测试");
+	}
+	
 	else
 		OLED_ShowChinese(0, 18, "未选择");
 
@@ -165,7 +171,7 @@ MenuState menu_control_running_page(void)
 		if(evt == Key::Event::ShortPress)
 		{
 			//关闭电调输出
-			 
+			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_RESET);
 
 			g_selected_control_mode = 0xFF;  // 退出任务模式
 

@@ -17,7 +17,7 @@ osThreadId_t controlTaskHandle = NULL;
 // 定义任务属性
 const osThreadAttr_t controlTask_attributes = {
     .name = "ControlTask",
-    .stack_size = 8 * 1024,
+    .stack_size = 12 * 1024,
     .priority = (osPriority_t)osPriorityHigh,
 };
 
@@ -38,7 +38,7 @@ uint8_t g_calib_command = 0;              // 0=idle, 1=gyro, 2=mag
 bool g_gyro_calibrated = false;
 bool g_mag_calibrated = false;
 
-static float z_axis_Compensation =0.25f;
+static float z_axis_Compensation =0.10f;
 	
 static uint32_t cpu_usage = 0;
 
@@ -273,7 +273,7 @@ static void SinglePointBalanceControl(
 //		
 //		}	
 //    }
-	
+
     //获取角度误差
     const float theta_x = theta[1];// - theta_bias_x;
     const float theta_y = theta[2];// - theta_bias_y;
@@ -387,6 +387,69 @@ static void SingleSideJumpBalanceControl(
 
         esc_node.send_esc_current_commands(esc_current_cmd, 3);
     }
+}
+
+
+static void WheelSpeedTestControl(
+    ESCNode &esc_node,
+    ESCNode::ESCStatusCache esc_status[],
+    const float *theta,
+    const float *theta_dot,
+    const int32_t *wheel_speed,
+    int32_t *esc_current_cmd,
+    float yaw,
+    uint32_t &calib_counter,
+    uint32_t &arm_counter,
+	uint32_t &adjust_counter,
+    bool &control_armed)
+{	
+	//温度保护，如果电调温度过高，退出控制
+	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature )
+	{return;}
+	
+    // 如果电机未校准，停止输出，进行校准
+    if (!(esc_status[ESC1_Index].calib_flag &&
+		  esc_status[ESC2_Index].calib_flag &&
+	      esc_status[ESC3_Index].calib_flag))
+    {
+        esc_current_cmd[0] = 0;
+        esc_current_cmd[1] = 0;
+        esc_current_cmd[2] = 0;
+        control_armed = false;
+        arm_counter = 0;
+
+        if ((calib_counter++ % 20U) == 0U)
+        {
+            const uint8_t esc_id = (uint8_t)((calib_counter / 20U) % 3U);
+            esc_node.calib_esc_command(esc_id + 1U);
+        }
+        esc_node.send_esc_current_commands(esc_current_cmd, 3);
+        return;
+    }
+    calib_counter = 0;
+
+    static uint32_t test_timer = 0;
+    static bool forward_phase = true;
+    const uint32_t phase_duration = 2500U;
+    const int32_t test_current = 500;
+
+    if (forward_phase) {
+        esc_current_cmd[0] =  test_current;
+        esc_current_cmd[1] =  test_current;
+        esc_current_cmd[2] =  test_current;
+    } else {
+        esc_current_cmd[0] = -test_current;
+        esc_current_cmd[1] = -test_current;
+        esc_current_cmd[2] = -test_current;
+    }
+
+    if (++test_timer >= phase_duration) {
+        test_timer = 0;
+        forward_phase = !forward_phase;
+    }
+    esc_node.send_esc_current_commands(esc_current_cmd, 3);
 }
 
 void StartControlTask(void *argument)
@@ -659,6 +722,23 @@ void StartControlTask(void *argument)
             control_armed = false;
             arm_counter = 0;
             adjust_counter = 0;
+        }
+		//模式5：转速测试
+		else if(g_selected_control_mode == 4)
+        {
+			 WheelSpeedTestControl(
+	              esc_node,
+	              esc_status,
+	              theta,
+	              theta_dot,
+	              wheel_speed,
+	              esc_current_cmd,
+	              yaw,
+	              calib_counter,
+	              arm_counter,
+				  adjust_counter,
+	              control_armed);
+
         }
 		//不在控制模式，油门置0
         else
