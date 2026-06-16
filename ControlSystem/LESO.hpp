@@ -29,6 +29,23 @@ void ESO_Init(ESO_t *eso);
 // dt: 控制周期 (s)，本系统为0.002s
 void ESO_Update(ESO_t *eso, float theta, float u, float dt);
 
+// 二阶速率ESO (用于YAW轴，不约束绝对角度)
+// 状态方程: d(rate)/dt = b0 * u + disturbance
+typedef struct
+{
+    float z1;  // 角速率估计 (rad/s)
+    float z2;  // 总扰动估计 (rad/s^2)
+
+    float beta1;  // ESO增益1 = 2*wo
+    float beta2;  // ESO增益2 = wo^2
+
+    float b0;  // 控制增益 (rad/s^2 per A)
+} ESO_Rate_t;
+
+void ESO_Rate_Init(ESO_Rate_t *eso);
+void ESO_Rate_Update(ESO_Rate_t *eso, float rate, float u, float dt);
+
+
 #ifdef __cplusplus
 }
 #endif

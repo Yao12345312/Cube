@@ -102,7 +102,7 @@ bool ESCNode::shouldAcceptTransfer(const CanardInstance* ins,
 	return false;
 	
 }
-//处理接收到的节点信息
+//解码接收到的节点信息
 void ESCNode::handle_GetNodeInfo(CanardInstance *ins, CanardRxTransfer *transfer)
 {	
 	ESCNode* self = (ESCNode*)ins->user_reference;
@@ -132,7 +132,7 @@ void ESCNode::handle_GetNodeInfo(CanardInstance *ins, CanardRxTransfer *transfer
                            total_size);
 	
 }
-
+//处理接收到的数据
 void ESCNode::handle_esc_status(CanardInstance *ins, CanardRxTransfer* transfer)
 {	
 	ESCNode* self = (ESCNode*)ins->user_reference;

@@ -38,7 +38,7 @@ uint8_t g_calib_command = 0;              // 0=idle, 1=gyro, 2=mag
 bool g_gyro_calibrated = false;
 bool g_mag_calibrated = false;
 
-static float z_axis_Compensation =0.10f;
+static float z_axis_Compensation =0.15f;
 	
 static uint32_t cpu_usage = 0;
 
@@ -80,8 +80,8 @@ static void SingleSideBalanceControl(
 	
 	//温度保护，如果电调温度过高，退出控制
 	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
-	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
-	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature )
+	   esc_status[ESC2_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC3_Index].temperature > ESC_MAX_Temperature )
 	{return;}
 	
     //如果电调没校准，则校准
@@ -174,7 +174,7 @@ static void SinglePointBalanceControl(
 	auto& buzzer = Board::getBuzzer();
 	
     const float max_balance_angle = 0.20f;
-    const float arm_angle         = 0.05f;
+    const float arm_angle         = 0.04f;
     const uint32_t arm_count_need = 20U;
 	
 	const float bias_k = 0.0002f;     //重心适应学习率
@@ -185,10 +185,10 @@ static void SinglePointBalanceControl(
     static float theta_bias_x = 0.0f;
     static float theta_bias_y = 0.0f;
 	
-	//温度保护，如果电调温度过高，退出控制
+	// 温度保护，如果电调温度过高，退出控制
 	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
-	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
-	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature )
+	   esc_status[ESC2_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC3_Index].temperature > ESC_MAX_Temperature )
 	{return;}
 	
     // 如果电机未校准，停止输出，进行校准
@@ -274,7 +274,7 @@ static void SinglePointBalanceControl(
 //		}	
 //    }
 
-    //获取角度误差
+    // 获取角度误差
     const float theta_x = theta[1];// - theta_bias_x;
     const float theta_y = theta[2];// - theta_bias_y;
 	
@@ -282,55 +282,42 @@ static void SinglePointBalanceControl(
     const float theta_corr_y = -theta_y - K_lqr[ESC3_Index][2] * wheel_speed[2] - K_lqr[ESC2_Index][2] * wheel_speed[1];
 	const float theta_corr_z = -K_lqr[ESC2_Index][2] * wheel_speed[1];
 	
-	//获取遥控器通道输入值
+	// 获取遥控器通道输入值
     float rc_yaw = g_rc_manual_y;
     if (fabsf(rc_yaw) < 0.04f) rc_yaw = 0.0f;
     const float rc_yaw_cmd = rc_yaw * 2.0f;
 	
-	//获取LQR控制器输出
+	// 获取LQR控制器输出
     float out_x = LQR_Compute(theta_corr_x, (theta[1]-2.35f), theta_dot[0], wheel_speed[0], ESC1_Index);
     float out_z = LQR_Compute(theta_corr_z, 0.0f, theta_dot[2], wheel_speed[1], ESC2_Index) + rc_yaw_cmd;
     float out_y = LQR_Compute(theta_corr_y, -(theta[2]-0.64f), theta_dot[1], wheel_speed[2], ESC3_Index);
-	//遥控器输入值缩放后叠加到输出
+	// 遥控器输入值缩放后叠加到输出
 	out_x += 0.15f * rc_yaw_cmd;
 	out_y -= 0.15f * rc_yaw_cmd;
 	
-    //线性ESO初始化
-    static ESO_t eso_x, eso_y, eso_z;
+    // 线性ESO初始化
+    static ESO_t eso_x, eso_y;
+    static ESO_Rate_t eso_z_rate;
     static bool eso_init = false;
     if (!eso_init) {
         ESO_Init(&eso_x);
         ESO_Init(&eso_y);
-        ESO_Init(&eso_z);
+        ESO_Rate_Init(&eso_z_rate);
         eso_init = true;
     }
-	//线性ESO状态更新
+	// 线性ESO状态更新
     ESO_Update(&eso_x, theta[1], out_x, 0.002f);
     ESO_Update(&eso_y, theta[2], out_y, 0.002f);
 	
-	//Z轴ESO更新前做相位解缠绕，防止旋转多圈后yaw角跳变引入抖动
-    static float yaw_unwrapped = 0.0f;
-    static float yaw_prev = 0.0f;
-    static bool yaw_first = true;
-    if (yaw_first) {
-        yaw_unwrapped = yaw;
-        yaw_prev = yaw;
-        yaw_first = false;
-    }
-    float dyaw = yaw - yaw_prev;
-    if (dyaw > PI) dyaw -= 2 * PI;
-    else if (dyaw < -PI) dyaw += 2 * PI;
-    yaw_unwrapped += dyaw;
-    yaw_prev = yaw;
-	
-    ESO_Update(&eso_z, yaw_unwrapped, out_z, 0.002f);
+    // Z轴速率ESO: 以theta_dot[2]为观测量，不约束绝对yaw角度，仅补偿yaw速率扰动
+    ESO_Rate_Update(&eso_z_rate, theta_dot[2], out_z, 0.002f);
 	
     // 扰动补偿项计算，补偿总扰动z3估计值
     const float comp_x = eso_x.z3 / eso_x.b0;
     const float comp_y = eso_y.z3 / eso_y.b0;
-    const float comp_z = eso_z.z3 / eso_z.b0;
+    const float comp_z = eso_z_rate.z2 / eso_z_rate.b0;
 	
-	//解锁后接入控制
+	// 解锁后接入控制
 	if(control_armed)
 	{
 	esc_current_cmd[0] = (int32_t)((out_x + z_axis_Compensation - comp_x) * 1000.0f);
@@ -369,8 +356,7 @@ static void SingleSideJumpBalanceControl(
 	else 
 	{
         calib_counter = 0;
-		
-
+	
         if (fabsf(theta[0]) > max_balance_angle) {
             esc_current_cmd[0] = 0;
             control_armed = false;
@@ -403,10 +389,10 @@ static void WheelSpeedTestControl(
 	uint32_t &adjust_counter,
     bool &control_armed)
 {	
-	//温度保护，如果电调温度过高，退出控制
+	// 温度保护，如果电调温度过高，退出控制
 	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
-	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
-	   esc_status[ESC1_Index].temperature > ESC_MAX_Temperature )
+	   esc_status[ESC2_Index].temperature > ESC_MAX_Temperature ||
+	   esc_status[ESC3_Index].temperature > ESC_MAX_Temperature )
 	{return;}
 	
     // 如果电机未校准，停止输出，进行校准
@@ -465,13 +451,13 @@ void StartControlTask(void *argument)
     auto &esc_node = Board::getESCNode();
     auto &ina226 = Board::getINA226();
 	
-    //传感器数据变量
+    // 传感器数据变量
     float ax = 0.0f, ay = 0.0f, az = 0.0f;
     float gx = 0.0f, gy = 0.0f, gz = 0.0f;
     QMC5883P::MagData magData;
     float roll = 0.0f, pitch = 0.0f, yaw = 0.0f;
 
-    //电调状态
+    // 电调状态
     ESCNode::ESCStatusCache esc_status[Max_ESC_Num] = {0};
     int32_t esc_current_cmd[3] = {0};
 	
@@ -482,14 +468,14 @@ void StartControlTask(void *argument)
 	
     bool control_armed = false;
 
-    //机械中点
+    // 机械中点
     const float mechanics_medium[3] = {
         -2.35f,  // 单边X轴
         -2.35f,  // 单点X轴
         -0.64f   // 单点Y轴
     };
 	
-    //系统时间戳
+    // 系统时间戳
     uint32_t next_wake = osKernelGetTickCount();
 
     g_mavSensorQueue = osMessageQueueNew(8, sizeof(MavSensorData_t), NULL);
