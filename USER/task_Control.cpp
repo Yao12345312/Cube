@@ -82,8 +82,26 @@ static void SingleSideBalanceControl(
 	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
 	   esc_status[ESC2_Index].temperature > ESC_MAX_Temperature ||
 	   esc_status[ESC3_Index].temperature > ESC_MAX_Temperature )
-	{return;}
-	
+	{
+		g_selected_control_mode = 0xFF;
+		g_rc_control_mode = 0xFF;
+		esc_current_cmd[0] = 0;
+		esc_node.send_esc_current_commands(esc_current_cmd, 3);
+		return;
+	}
+
+	//转速保护
+	if(esc_status[ESC1_Index].rpm > ESC_MAX_SpeedRPM ||
+	   esc_status[ESC2_Index].rpm > ESC_MAX_SpeedRPM ||
+	   esc_status[ESC3_Index].rpm > ESC_MAX_SpeedRPM)
+	{
+		g_selected_control_mode = 0xFF;
+		g_rc_control_mode = 0xFF;
+		esc_current_cmd[0] = 0;
+		esc_node.send_esc_current_commands(esc_current_cmd, 3);
+		return;
+	}
+
     //如果电调没校准，则校准
     if (!esc_status[ESC1_Index].calib_flag)
 	{
@@ -189,8 +207,30 @@ static void SinglePointBalanceControl(
 	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
 	   esc_status[ESC2_Index].temperature > ESC_MAX_Temperature ||
 	   esc_status[ESC3_Index].temperature > ESC_MAX_Temperature )
-	{return;}
-	
+	{
+		g_selected_control_mode = 0xFF;
+		g_rc_control_mode = 0xFF;
+		esc_current_cmd[0] = 0;
+		esc_current_cmd[1] = 0;
+		esc_current_cmd[2] = 0;
+		esc_node.send_esc_current_commands(esc_current_cmd, 3);
+		return;
+	}
+
+	//转速保护
+	if(esc_status[ESC1_Index].rpm > ESC_MAX_SpeedRPM ||
+	   esc_status[ESC2_Index].rpm > ESC_MAX_SpeedRPM ||
+	   esc_status[ESC3_Index].rpm > ESC_MAX_SpeedRPM)
+	{
+		g_selected_control_mode = 0xFF;
+		g_rc_control_mode = 0xFF;
+		esc_current_cmd[0] = 0;
+		esc_current_cmd[1] = 0;
+		esc_current_cmd[2] = 0;
+		esc_node.send_esc_current_commands(esc_current_cmd, 3);
+		return;
+	}
+
     // 如果电机未校准，停止输出，进行校准
     if (!(esc_status[ESC1_Index].calib_flag &&
           esc_status[ESC2_Index].calib_flag &&
@@ -393,8 +433,16 @@ static void WheelSpeedTestControl(
 	if(esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
 	   esc_status[ESC2_Index].temperature > ESC_MAX_Temperature ||
 	   esc_status[ESC3_Index].temperature > ESC_MAX_Temperature )
-	{return;}
-	
+	{
+		g_selected_control_mode = 0xFF;
+		g_rc_control_mode = 0xFF;
+		esc_current_cmd[0] = 0;
+		esc_current_cmd[1] = 0;
+		esc_current_cmd[2] = 0;
+		esc_node.send_esc_current_commands(esc_current_cmd, 3);
+		return;
+	}
+
     // 如果电机未校准，停止输出，进行校准
     if (!(esc_status[ESC1_Index].calib_flag &&
 		  esc_status[ESC2_Index].calib_flag &&

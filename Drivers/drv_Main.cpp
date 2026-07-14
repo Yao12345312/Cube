@@ -48,7 +48,7 @@ void init_drv_Main(void)
   MX_FDCAN1_Init();
 	
   //没插TF卡的时候需要注释，不然会卡Error_Handler
-  //MX_SDMMC1_SD_Init();
+  MX_SDMMC1_SD_Init();
 	
   MX_USB_DEVICE_Init();
   //等待各模块稳定

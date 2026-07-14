@@ -14,7 +14,8 @@
 #define Max_ESC_Num 4
 //电调温度保护阈值
 #define ESC_MAX_Temperature 80
-
+//电调转速阈值
+#define ESC_MAX_SpeedRPM 5000
 class ESCNode
 {
 public:

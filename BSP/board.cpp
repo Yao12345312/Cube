@@ -20,7 +20,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
 FDCAN_HandleTypeDef hfdcan1;
 
-//=======================Meyers Singleton 实现 =====================
+//=======================静态局部变量的懒汉单例实现 =====================
 
 // 每个单例都提供静态访问接口
 

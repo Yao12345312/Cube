@@ -14,7 +14,7 @@ osThreadId_t DisplayTaskHandle = NULL;
 //定义任务属性
 const osThreadAttr_t DisplayTask_attributes = {
     .name = "ControlTask",
-    .stack_size = 8*1024,
+    .stack_size = 2*1024,
     .priority = (osPriority_t) osPriorityNormal,  // 显示任务不需要高实时性，降低优先级避免阻塞控制任务
 };
 

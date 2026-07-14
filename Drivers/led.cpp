@@ -129,7 +129,7 @@ void LedPwm::setRGBBlink(uint8_t red, uint8_t green, uint8_t blue, uint8_t frequ
     if (m_blinkTaskHandle == NULL) {
         osThreadAttr_t taskAttr = {
             .name = "LedBlink",
-            .stack_size = 512,
+            .stack_size = 1024,
             .priority = osPriorityNormal,
         };
         m_blinkTaskHandle = osThreadNew(blinkTaskFunc, this, &taskAttr);
