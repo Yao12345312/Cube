@@ -15,14 +15,15 @@ void StartDisplayTask(void *argument)
     auto *key2   = drv_key(BOARD_KEY_2);
     auto *key3   = drv_key(BOARD_KEY_3);
 
-    // 主菜单项 (无磁力计 -> 去掉磁力计校准)
-    const int8_t  MENU_COUNT = 5;
+    // 主菜单项 
+    const int8_t  MENU_COUNT = 6;
     const int16_t VISIBLE_Y[3] = {18, 32, 46};
-    const char *menu_names[5] = {
+    const char *menu_names[6] = {
         "立方体姿态",
         "任务控制",
         "固件版本",
         "陀螺仪校准",
+        "电调调准",
         "电调编号设置"
     };
 
@@ -55,7 +56,7 @@ void StartDisplayTask(void *argument)
         if (key2) key2->update();
         if (key3) key3->update();
 
-        // 取最新的显示传感数据帧 (电压等)
+        // 取最新的显示传感数据帧 
         if (g_dispSensorQueue != NULL)
         {
             MavSensorData_t sensor_data;
@@ -119,7 +120,8 @@ void StartDisplayTask(void *argument)
                     case 1: main_menu_flag = MenuState::CONTROL_PAGE_STATE;    break;
                     case 2: main_menu_flag = MenuState::FIRMWARE_PAGE_STATE;   break;
                     case 3: main_menu_flag = MenuState::GYRO_CALIB_PAGE_STATE; break;
-                    case 4: main_menu_flag = MenuState::ESC_INDEX_PAGE_STATE;  break;
+                    case 4: main_menu_flag = MenuState::ESC_CALIB_PAGE_STATE;  break;
+                    case 5: main_menu_flag = MenuState::ESC_INDEX_PAGE_STATE;  break;
                 }
 
                 // 长按后松手检测
@@ -140,6 +142,7 @@ void StartDisplayTask(void *argument)
             case MenuState::CONTROL_RUNNING_STATE:      main_menu_flag = menu_control_running_page(); break;
             case MenuState::GYRO_CALIB_PAGE_STATE:      main_menu_flag = menu_gyro_calib_page();      break;
             case MenuState::ESC_INDEX_PAGE_STATE:       main_menu_flag = menu_esc_index_page();       break;
+            case MenuState::ESC_CALIB_PAGE_STATE:       main_menu_flag = menu_esc_calib_page();       break;
             default: break;
         }
 

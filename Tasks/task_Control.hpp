@@ -9,13 +9,6 @@ void StartControlTask(void *argument);
 // 控制任务句柄（由 taskManager 创建后赋值）
 extern osThreadId_t controlTaskHandle;
 
-// =============================================================================
-// 跨任务共享数据 (移植自参考工程 task_Control.cpp / attitute.hpp)
-//
-// 控制任务每 10 个周期 (20ms@500Hz) 打包一帧 MavSensorData 入队,
-// 通信任务从队列取出后调 MAVLink::SendAttitude / SendBatteryStatus 上报。
-// =============================================================================
-
 // 共享姿态 (控制任务写, 显示菜单读), 配互斥锁
 typedef struct
 {
@@ -59,6 +52,10 @@ extern volatile float   g_rc_manual_y;       // 转向 (偏航角速度目标)
 // 0xFF = 未选择 (停机); 与 g_rc_control_mode 取有效者
 // 0=单边 1=单点 2=单边起跳 3=单点起跳 4=转速测试
 extern uint8_t g_selected_control_mode;
+
+// 电调调准页激活标志 (显示任务写, 控制任务读)
+// true 期间空闲分支暂停零电流广播, 避免 CAN 队列拥堵/干扰电调校准
+extern volatile bool g_esc_calib_menu_active;
 
 // =============================================================================
 // 校准任务间同步 (移植自参考工程 task_Control.cpp)

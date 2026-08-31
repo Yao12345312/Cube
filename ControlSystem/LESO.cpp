@@ -47,6 +47,13 @@ void LESO::update(float theta, float u, float dt)
     z3_ += dt * (b3_ * e);
 }
 
+void LESO::reset(float theta)
+{
+    z1_ = theta;
+    z2_ = 0.0f;
+    z3_ = 0.0f;
+}
+
 // =============================================================================
 // 二阶角速度 LESO
 //
@@ -84,4 +91,10 @@ void LESO_Rate::update(float rate, float u, float dt)
 
     // z2: 扰动估计
     z2_ += dt * (b2_ * e);
+}
+
+void LESO_Rate::reset(float rate)
+{
+    z1_ = rate;
+    z2_ = 0.0f;
 }

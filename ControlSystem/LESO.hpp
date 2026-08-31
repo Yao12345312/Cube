@@ -23,6 +23,7 @@ class LESO
     LESO();
 
     void update(float theta, float u, float dt);
+    void reset(float theta = 0.0f);
 
     float z1() const { return z1_; }   // 角度估计 (rad)
     float z2() const { return z2_; }   // 角速度估计 (rad/s)
@@ -43,6 +44,7 @@ class LESO_Rate
     LESO_Rate();
 
     void update(float rate, float u, float dt);
+    void reset(float rate = 0.0f);
 
     float z1() const { return z1_; }   // 角速度估计 (rad/s)
     float z2() const { return z2_; }   // 扰动估计 (rad/s^2)

@@ -420,6 +420,11 @@
               <FileType>8</FileType>
               <FilePath>.\Basic\param.cpp</FilePath>
             </File>
+            <File>
+              <FileName>param_flash.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Basic\param_flash.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

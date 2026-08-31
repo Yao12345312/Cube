@@ -40,7 +40,7 @@ struct Params
     float max_balance_angle; // 失衡保护角度 (rad), 超出强制 disarm
     float arm_angle_single;  // 单边解锁角度阈值 (rad)
     float arm_angle_point;   // 单点解锁角度阈值 (rad)
-    float arm_rate;          // 单边解锁角速度阈值 (rad/s)
+    float arm_rate;          // 起跳落地切平衡的角速度阈值 (rad/s), 需同时满足才预解锁
     float arm_count_need;    // 解锁需持续的周期数 (500Hz)
 
     // ---- 重心自适应 ----
@@ -54,9 +54,28 @@ struct Params
     float rc_yaw_gain;      // 遥控偏航指令增益
     float rc_yaw_deadzone;  // 遥控死区
     float rc_cross_gain;    // X/Y轮偏航交叉耦合系数
+
+    // ---- 起跳 (单边/单点共用) ----
+    float jump_flat_roll;   // 平放检测 roll 角 (rad), 平放稳定后触发起跳
+    float jump_spin_cur;    // 储能电流幅值 (A), 决定储能快慢
+    float jump_kick_cur;    // 起跳电流幅值 (A), 即起跳力度
+    float jump_spin_rpm;    // 储能目标转速 (rpm), 需低于转速保护阈值
+    float jump_spin_ms;     // 储能阶段超时 (ms), 超时直接进入起跳
+    float jump_kick_ms;     // 反向加速时长 (ms), 决定反力矩冲量
+    float jump_settle_ms;   // 起跳后最短腾空时间 (ms), 之后角度回到平衡角附近才切入平衡
+    float jump_arm_ang;     // 起跳等待/切入平衡的姿态阈值 (rad, 相对机械中值)
+
+    // ---- 电机方向标定 [ESC1, ESC2, ESC3] ----
+    float esc_dir_sign[3];  // 正电流指令电机转向: 逆时针=1, 顺时针=-1
 };
 
 extern Params g_params;
+
+// 编译期出厂默认值 (与 g_params 初始值同源, 恢复出厂参数用)
+extern const Params k_param_defaults;
+
+// 参数脏标志: param_set() 置位, 通信任务固化到 Flash 成功后清除
+extern volatile bool g_params_dirty;
 
 // =============================================================================
 // 参数注册表

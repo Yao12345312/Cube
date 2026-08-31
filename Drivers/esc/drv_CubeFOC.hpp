@@ -15,7 +15,7 @@
 // 温度保护阈值
 #define ESC_MAX_Temperature  80
 // 转速保护阈值
-#define ESC_MAX_SpeedRPM     1000
+#define ESC_MAX_SpeedRPM     8000
 
 class CAN_CLASS;
 

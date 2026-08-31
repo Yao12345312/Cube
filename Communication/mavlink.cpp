@@ -1,6 +1,7 @@
 #include "mavlink.hpp"
 #include "board.hpp"
 #include "param.hpp"
+#include "param_flash.hpp"
 #include "task_Control.hpp"
 #include "led/drv_led.hpp"
 
@@ -157,6 +158,12 @@ void ParseData(const uint8_t *data, uint16_t len)
                 g_rc_control_mode = 4;
                 if (g_controlModeSem != NULL)
                     osSemaphoreRelease(g_controlModeSem);
+            }
+            else if (cmd.command == 0x4106)  // 恢复出厂参数
+            {
+                // 仅停机状态允许: 擦除参数扇区 (~1s) 会冻结控制环
+                if (g_selected_control_mode == 0xFF && g_rc_control_mode == 0xFF)
+                    param_reset_to_default();
             }
             break;
         }

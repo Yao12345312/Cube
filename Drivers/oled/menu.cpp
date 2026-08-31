@@ -288,3 +288,188 @@ MenuState menu_esc_index_page(void)
 
     return MenuState::ESC_INDEX_PAGE_STATE;
 }
+
+// =============================================================================
+// 电调调准页: 校准电调1 / 校准电调2 / 校准电调3 / 全部校准
+// 长按 key3 启动校准, 每帧(50ms)持续重发 calib_esc_command:
+// 电调需持续收到校准命令才会执行/保持校准, 单条命令无效
+// 完成判定: 观察到 calib_flag 回落(重新校准开始)后重新置位 = 校准完成;
+//          未观察到回落(电调未清标志)则至少持续发送 5s 后判定完成
+// 15s 超时显示电调无响应
+// 期间置位 g_esc_calib_menu_active, 控制任务暂停空闲零电流广播
+// =============================================================================
+MenuState menu_esc_calib_page(void)
+{
+    auto *oled  = drv_oled();
+    auto *esc   = drv_cubefoc();
+    auto *key1  = drv_key(BOARD_KEY_1);
+    auto *key2  = drv_key(BOARD_KEY_2);
+    auto *key3  = drv_key(BOARD_KEY_3);
+
+    const int8_t MENU_COUNT = 4;
+    const int16_t VISIBLE_Y[3] = {18, 32, 46};
+    const char *menu_names[4] = {"校准电调1", "校准电调2", "校准电调3", "全部校准"};
+
+    // 300 帧 * 50ms = 15s 校准超时
+    const uint16_t CALIB_TIMEOUT_FRAMES = 300;
+    // 未观察到 flag 回落时, 至少持续发送 100 帧 * 50ms = 5s 保证触发重新校准
+    const uint16_t CALIB_FORCED_FRAMES  = 100;
+
+    enum class CalibPhase : uint8_t { LIST, RUNNING, DONE, TIMEOUT };
+
+    static CalibPhase phase         = CalibPhase::LIST;
+    static int8_t     selected_idx  = 0;
+    static int8_t     scroll_top    = 0;
+    static uint16_t   frame_counter = 0;
+    static bool       saw_clear     = false;   // 观察到目标 flag 回落 (重新校准开始)
+
+    // 挂起空闲零电流广播 (退出时清零)
+    g_esc_calib_menu_active = true;
+
+    //进入电调调准页: 开启电调 MOS 电源 (PE0)
+    //电调需上电才能接收校准命令, 每帧幂等写入 (仅置位 GPIO)
+    board_esc_power_enable();
+
+    // 读取 3 路电调校准标志
+    bool flag[3] = {false, false, false};
+    if (esc)
+    {
+        CubeFOC::ESCStatusCache st;
+        for (uint8_t i = 0; i < 3; i++)
+        {
+            if (esc->get_esc_status(i, st))
+                flag[i] = st.calib_flag;
+        }
+    }
+
+    bool want_exit = false;
+    bool start_calib = false;
+
+    switch (phase)
+    {
+    // ---------------- 菜单列表 ----------------
+    case CalibPhase::LIST:
+    {
+        for (int8_t i = 0; i < 3; i++)
+        {
+            int8_t item_idx = scroll_top + i;
+            if (item_idx < MENU_COUNT)
+                oled->showChinese(0, VISIBLE_Y[i], menu_names[item_idx]);
+        }
+
+        if (key1 && key1->getEvent() == DrvKey::Event::ShortPress)
+        {
+            selected_idx = (int8_t)((selected_idx - 1 + MENU_COUNT) % MENU_COUNT);
+            if (selected_idx < scroll_top)      scroll_top = selected_idx;
+            if (selected_idx >= scroll_top + 3) scroll_top = (int8_t)(selected_idx - 2);
+        }
+
+        if (key2 && key2->getEvent() == DrvKey::Event::ShortPress)
+        {
+            selected_idx = (int8_t)((selected_idx + 1) % MENU_COUNT);
+            if (selected_idx < scroll_top)      scroll_top = selected_idx;
+            if (selected_idx >= scroll_top + 3) scroll_top = (int8_t)(selected_idx - 2);
+        }
+
+        int16_t draw_frame_y_pos = VISIBLE_Y[selected_idx - scroll_top];
+        oled->drawRectangle(0, draw_frame_y_pos, 120, 15, 0);
+
+        if (key3)
+        {
+            DrvKey::Event evt = key3->getEvent();
+            if (evt == DrvKey::Event::ShortPress)
+                want_exit = true;
+
+            if (evt == DrvKey::Event::LongPress)
+                start_calib = true;
+        }
+        break;
+    }
+
+    // ---------------- 持续重发校准命令并轮询 ----------------
+    case CalibPhase::RUNNING:
+    {
+        // 每帧重发
+        if (esc)
+        {
+            if (selected_idx < 3)
+            {
+                esc->calib_esc_command((uint8_t)(selected_idx + 1));
+            }
+            else
+            {
+                esc->calib_esc_command(ESC1_Index + 1);
+                esc->calib_esc_command(ESC2_Index + 1);
+                esc->calib_esc_command(ESC3_Index + 1);
+            }
+        }
+
+        bool target_done  = (selected_idx < 3) ? flag[selected_idx]
+                                               : (flag[0] && flag[1] && flag[2]);
+        bool target_clear = (selected_idx < 3) ? !flag[selected_idx]
+                                               : (!flag[0] || !flag[1] || !flag[2]);
+        if (target_clear)
+            saw_clear = true;
+
+        // 完成判定:
+        // 1. 已观察到 flag 回落 (重新校准开始) -> 等待 flag 重新置位
+        // 2. 未观察到回落 (电调已校准且不清标志) -> 持续发送满 5s 保证触发
+        if ((saw_clear && target_done) ||
+            (!saw_clear && frame_counter >= CALIB_FORCED_FRAMES))
+            phase = CalibPhase::DONE;
+        else if (++frame_counter >= CALIB_TIMEOUT_FRAMES)
+            phase = CalibPhase::TIMEOUT;
+
+        oled->showChinese(0, 18, "校准中...");
+        break;
+    }
+
+    case CalibPhase::DONE:
+        oled->showChinese(0, 18, "校准完成");
+        break;
+
+    case CalibPhase::TIMEOUT:
+        oled->showChinese(0, 18, "电调无响应");
+        break;
+    }
+
+    // 运行/结果页公共: 3 路校准标志 + 返回提示
+    if (phase != CalibPhase::LIST)
+    {
+        char flag_line[20];
+        snprintf(flag_line, sizeof(flag_line), "1:%s 2:%s 3:%s",
+                 flag[0] ? "OK" : "--",
+                 flag[1] ? "OK" : "--",
+                 flag[2] ? "OK" : "--");
+        oled->showString(0, 34, flag_line);
+        oled->showString(0, 50, "key3: back");
+
+        if (key3 && key3->getEvent() == DrvKey::Event::ShortPress)
+            want_exit = true;
+    }
+
+    // ---------------- 退出: 恢复广播, 关闭电调电源 ----------------
+    if (want_exit)
+    {
+        //退出电调调准页: 关闭电调 MOS 电源 (PE0)
+        board_esc_power_disable();
+        g_esc_calib_menu_active = false;
+
+        selected_idx  = 0;
+        scroll_top    = 0;
+        frame_counter = 0;
+        saw_clear     = false;
+        phase         = CalibPhase::LIST;
+        return MenuState::MAIN_PAGE_STATE;
+    }
+
+    // 长按启动校准: 下一帧进入 RUNNING, 避免本帧菜单与结果页叠加绘制
+    if (start_calib)
+    {
+        frame_counter = 0;
+        saw_clear     = false;
+        phase = CalibPhase::RUNNING;
+    }
+
+    return MenuState::ESC_CALIB_PAGE_STATE;
+}

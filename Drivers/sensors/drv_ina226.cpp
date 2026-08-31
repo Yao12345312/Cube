@@ -4,7 +4,7 @@ DrvINA226::DrvINA226(BoardI2cPort port, uint8_t dev_addr)
 {
     m_port     = port;
     m_dev_addr = dev_addr;
-    bat_cells  = static_cast<uint32_t>(BatCellsNum::CELLS_4S);
+    bat_cells  = static_cast<uint32_t>(BatCellsNum::CELLS_6S);
 }
 
 bool DrvINA226::writeReg(uint8_t reg, uint16_t value)

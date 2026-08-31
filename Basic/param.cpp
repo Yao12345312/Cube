@@ -10,28 +10,30 @@
 //   max_output    -> LQR_Control.cpp (20.0)
 //   mech_mid      -> task_Control.cpp mechanics_medium[3]
 //   arm/bias/z    -> task_Control.cpp 各控制函数内硬编码常量
+//   jump          -> task_Control.cpp 起跳控制参数
+//   esc_dir_sign  -> task_Control.cpp 电机方向标定 (逆时针=1 顺时针=-1)
 // =============================================================================
-Params g_params =
+const Params k_param_defaults =
 {
-    /*eso_b0*/        400.0f,
+    /*eso_b0*/        1200.0f,
     /*eso_wo*/        100.0f,
     /*eso_wo_rate*/   100.0f,
 
     /*lqr_k[3][3]*/   {
-        {-120.0f, -13.0f, 0.00004f},   // ESC1 -> X轴
-        {   0.0f,  13.0f, 0.00002f},   // ESC2 -> Z轴
-        {-120.0f, -13.0f, 0.00004f},   // ESC3 -> Y轴
+        {-70.0f, -10.0f, 0.00005f},   // ESC1 -> X轴
+        {   0.0f,  10.0f, 0.00002f},   // ESC2 -> Z轴
+        {-70.0f, -10.0f, 0.00005f},   // ESC3 -> Y轴
     },
     /*lqr_ff[3]*/     { 0.0f, 0.0f, 0.0f },
     /*lqr_max_out*/   20.0f,
 
-    /*mech_mid[3]*/   { -2.35f, -2.35f, -0.64f },
+    /*mech_mid[3]*/   { -2.40f, -2.40f, -0.60f },
 
     /*max_balance_angle*/ 0.20f,
     /*arm_angle_single*/  0.10f,
-    /*arm_angle_point*/   0.04f,
+    /*arm_angle_point*/   0.03f,
     /*arm_rate*/          0.50f,
-    /*arm_count_need*/    20.0f,
+    /*arm_count_need*/    30.0f,
 
     /*bias_gain*/     0.0001f,
     /*bias_k*/        0.0002f,
@@ -42,7 +44,22 @@ Params g_params =
     /*rc_yaw_gain*/      2.0f,
     /*rc_yaw_deadzone*/  0.04f,
     /*rc_cross_gain*/    0.15f,
+
+    /*jump_flat_roll*/   3.136f,
+    /*jump_spin_cur*/    8.0f,
+    /*jump_kick_cur*/    15.0f,
+    /*jump_spin_rpm*/    6000.0f,
+    /*jump_spin_ms*/     1500.0f,
+    /*jump_kick_ms*/     150.0f,
+    /*jump_settle_ms*/   400.0f,    // 最短腾空时间, 之后角度回到平衡角附近切入平衡
+    /*jump_arm_ang*/     0.15f,
+
+    /*esc_dir_sign[3]*/ { -1.0f, 1.0f, 1.0f },   // 正电流转向: ESC1顺 ESC2逆 ESC3逆
 };
+
+Params g_params = k_param_defaults;
+
+volatile bool g_params_dirty = false;   // param_set 置位, Flash 固化成功后清除
 
 volatile bool g_eso_dirty = true;   // 启动时强制重算一次 beta
 
@@ -99,6 +116,21 @@ const ParamEntry g_param_table[] =
     {"rc_yaw_gain", &g_params.rc_yaw_gain,       PARAM_TYPE_REAL32, false},
     {"rc_yaw_dz",   &g_params.rc_yaw_deadzone,   PARAM_TYPE_REAL32, false},
     {"rc_cross",    &g_params.rc_cross_gain,     PARAM_TYPE_REAL32, false},
+
+    // ---- 起跳 ----
+    {"jump_flat_roll", &g_params.jump_flat_roll,  PARAM_TYPE_REAL32, false},
+    {"jump_spin_cur", &g_params.jump_spin_cur,   PARAM_TYPE_REAL32, false},
+    {"jump_kick_cur", &g_params.jump_kick_cur,   PARAM_TYPE_REAL32, false},
+    {"jump_spin_rpm", &g_params.jump_spin_rpm,   PARAM_TYPE_REAL32, false},
+    {"jump_spin_ms",  &g_params.jump_spin_ms,    PARAM_TYPE_REAL32, false},
+    {"jump_kick_ms",  &g_params.jump_kick_ms,    PARAM_TYPE_REAL32, false},
+    {"jump_settl_ms", &g_params.jump_settle_ms,  PARAM_TYPE_REAL32, false},
+    {"jump_arm_ang",  &g_params.jump_arm_ang,    PARAM_TYPE_REAL32, false},
+
+    // ---- 电机方向标定 (正电流转向: 逆时针=1 顺时针=-1) ----
+    {"esc_dir0",    &g_params.esc_dir_sign[0],  PARAM_TYPE_REAL32, false},
+    {"esc_dir1",    &g_params.esc_dir_sign[1],  PARAM_TYPE_REAL32, false},
+    {"esc_dir2",    &g_params.esc_dir_sign[2],  PARAM_TYPE_REAL32, false},
 };
 
 const uint16_t g_param_count = (uint16_t)(sizeof(g_param_table) / sizeof(g_param_table[0]));
@@ -136,11 +168,12 @@ bool param_set(uint16_t index, float value)
         return false;
 
     *g_param_table[index].ptr = value;
+    g_params_dirty = true;   // 标记待固化, 通信任务检测后写入 Flash
 
     // ESO 带宽变更 -> 置 dirty, LESO 下次 update() 重算 beta
     float *p = g_param_table[index].ptr;
     if (p == &g_params.eso_wo || p == &g_params.eso_wo_rate)
         g_eso_dirty = true;
-
+    
     return true;
 }
