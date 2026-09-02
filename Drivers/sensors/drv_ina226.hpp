@@ -25,13 +25,6 @@ public:
     // 读取 Bus 电压 (V), 失败返回 -1
     float readBusVoltage(void);
 
-    // 电池节数配置 (用于电量估算)
-    enum class BatCellsNum : uint32_t {
-        CELLS_3S = 3,
-        CELLS_4S = 4,
-        CELLS_6S = 6
-    };
-
     // 电池状态
     enum class BatState : uint8_t {
         BAT_MEASURE_ERR = 0,
@@ -41,11 +34,8 @@ public:
         BAT_LOW_POWER   = 4
     };
 
-    // 根据总电压判断电池状态
+    // 根据总电压判断电池状态 (芯数取自 g_params.bat_cells, 上位机可在线修改)
     BatState getBatStatus(float voltage);
-
-    // 设置电池节数 (默认 4S)
-    void setBatCellsNum(BatCellsNum cells) { bat_cells = static_cast<uint32_t>(cells); }
 
 private:
     // 写 16 位寄存器
@@ -55,7 +45,6 @@ private:
 
     BoardI2cPort m_port;
     uint8_t      m_dev_addr;
-    uint32_t     bat_cells;
 
     // 单节电压阈值 (V)
     static constexpr float LOW_POWER_VEL  = 3.70f;

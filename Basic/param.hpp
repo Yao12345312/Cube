@@ -67,6 +67,9 @@ struct Params
 
     // ---- 电机方向标定 [ESC1, ESC2, ESC3] ----
     float esc_dir_sign[3];  // 正电流指令电机转向: 逆时针=1, 顺时针=-1
+
+    // ---- 电源 ----
+    float bat_cells;       // 电池芯数 (3/4/6), INA226 电量状态估算用
 };
 
 extern Params g_params;

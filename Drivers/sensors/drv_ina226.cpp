@@ -1,10 +1,10 @@
 #include "drv_ina226.hpp"
+#include "param.hpp"
 
 DrvINA226::DrvINA226(BoardI2cPort port, uint8_t dev_addr)
 {
     m_port     = port;
     m_dev_addr = dev_addr;
-    bat_cells  = static_cast<uint32_t>(BatCellsNum::CELLS_6S);
 }
 
 bool DrvINA226::writeReg(uint8_t reg, uint16_t value)
@@ -30,7 +30,7 @@ bool DrvINA226::readReg(uint8_t reg, uint16_t &value)
 
 void DrvINA226::init(void)
 {
-    // 配置寄存器 0x4527 (与参考工程一致)
+    // 配置寄存器 0x4527 
     // 平均过采样 16 次, Bus/Shunt 转换时间 1.1ms, 模式: Bus+Shunt 连续
     writeReg(INA226_REG_CONFIG, 0x4527);
 }
@@ -47,16 +47,19 @@ float DrvINA226::readBusVoltage(void)
 
 DrvINA226::BatState DrvINA226::getBatStatus(float voltage)
 {
-    if (voltage < bat_cells * LOW_POWER_VEL)
+    // 芯数由参数系统提供 (g_params.bat_cells, 默认 6), 单 float 读原子
+    const float cells = g_params.bat_cells;
+
+    if (voltage < cells * LOW_POWER_VEL)
         return BatState::BAT_LOW_POWER;
 
-    if (voltage < bat_cells * MID_POWER_VEL)
+    if (voltage < cells * MID_POWER_VEL)
         return BatState::BAT_MID_POWER;
 
-    if (voltage < bat_cells * HIGH_POWER_VEL)
+    if (voltage < cells * HIGH_POWER_VEL)
         return BatState::BAT_HIGH_POWER;
 
-    if (voltage < bat_cells * FULL_POWER_VEL)
+    if (voltage < cells * FULL_POWER_VEL)
         return BatState::BAT_FULL_POWER;
 
     return BatState::BAT_MEASURE_ERR;

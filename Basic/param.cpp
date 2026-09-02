@@ -12,6 +12,7 @@
 //   arm/bias/z    -> task_Control.cpp 各控制函数内硬编码常量
 //   jump          -> task_Control.cpp 起跳控制参数
 //   esc_dir_sign  -> task_Control.cpp 电机方向标定 (逆时针=1 顺时针=-1)
+//   bat_cells     -> drv_ina226.cpp 电池芯数 (默认 6S)
 // =============================================================================
 const Params k_param_defaults =
 {
@@ -55,6 +56,8 @@ const Params k_param_defaults =
     /*jump_arm_ang*/     0.15f,
 
     /*esc_dir_sign[3]*/ { -1.0f, 1.0f, 1.0f },   // 正电流转向: ESC1顺 ESC2逆 ESC3逆
+
+    /*bat_cells*/     6.0f,
 };
 
 Params g_params = k_param_defaults;
@@ -131,6 +134,9 @@ const ParamEntry g_param_table[] =
     {"esc_dir0",    &g_params.esc_dir_sign[0],  PARAM_TYPE_REAL32, false},
     {"esc_dir1",    &g_params.esc_dir_sign[1],  PARAM_TYPE_REAL32, false},
     {"esc_dir2",    &g_params.esc_dir_sign[2],  PARAM_TYPE_REAL32, false},
+
+    // ---- 电源 ----
+    {"bat_cells",   &g_params.bat_cells,        PARAM_TYPE_REAL32, false},
 };
 
 const uint16_t g_param_count = (uint16_t)(sizeof(g_param_table) / sizeof(g_param_table[0]));

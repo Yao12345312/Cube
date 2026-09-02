@@ -20,7 +20,8 @@
 #define PARAM_RECORD_COUNT      512U           // 记录条数 (128KB / 256B)
 
 // 参数布局版本 (与 Params 结构一一对应, 变更布局时递增)
-#define PARAM_FLASH_VERSION     1U
+// v2: 新增 bat_cells 字段
+#define PARAM_FLASH_VERSION     2U
 
 // 上电加载 (main 早期, 内核启动前调用): 取 CRC 有效且最新的记录覆盖 g_params,
 // 无有效记录/版本不匹配时保持编译期默认值
