@@ -23,7 +23,7 @@ void StartDisplayTask(void *argument)
         "任务控制",
         "固件版本",
         "陀螺仪校准",
-        "电调调准",
+        "电调校准",
         "电调编号设置"
     };
 
